@@ -25,6 +25,7 @@
 #endregion
 
 using System;
+using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
@@ -33,19 +34,26 @@ namespace RamGecTools
     /// <summary>
     /// Class for intercepting low level Windows mouse hooks.
     /// </summary>
-    public class MouseHook
+    public class LowLevelnputHook
     {
         /// <summary>
         /// Internal callback processing function
         /// </summary>
         private delegate IntPtr MouseHookHandler(int nCode, IntPtr wParam, IntPtr lParam);
         private MouseHookHandler hookHandler;
+		private MouseHookHandler keyHookHandler;
 
         /// <summary>
-        /// Function to be called when defined even occurs
+        /// Function to be called when defined event occurs
         /// </summary>
         /// <param name="mouseStruct">MSLLHOOKSTRUCT mouse structure</param>
         public delegate void MouseHookCallback(MSLLHOOKSTRUCT mouseStruct);
+
+        /// <summary>
+        /// Function to be called when defined event occurs
+        /// </summary>
+        /// <param name="mouseStruct">MSLLHOOKSTRUCT mouse structure</param>
+        public delegate void KeyBoardHookCallback(Keys key);
 
         #region Events
         public event MouseHookCallback LeftButtonDown;
@@ -57,12 +65,16 @@ namespace RamGecTools
         public event MouseHookCallback DoubleClick;
         public event MouseHookCallback MiddleButtonDown;
         public event MouseHookCallback MiddleButtonUp;
+
+		public event KeyBoardHookCallback KeyDown;
+		public event KeyBoardHookCallback KeyUp;
         #endregion
 
         /// <summary>
         /// Low level mouse hook's ID
         /// </summary>
-        private IntPtr hookID = IntPtr.Zero;
+        private IntPtr mouseHookID = IntPtr.Zero;
+		private IntPtr keyBoardHookID = IntPtr.Zero;
 
         /// <summary>
         /// Install low level mouse hook
@@ -70,8 +82,10 @@ namespace RamGecTools
         /// <param name="mouseHookCallbackFunc">Callback function</param>
         public void Install()
         {
-            hookHandler = HookFunc;
-            hookID = SetHook(hookHandler);
+			hookHandler = HookFunc;
+			mouseHookID = SetHook(hookHandler, WH_MOUSE_LL);
+			keyHookHandler = KeyBoardHookFunc;
+			keyBoardHookID = SetHook(keyHookHandler, WH_KEYBOARD_LL);
         }
 
         /// <summary>
@@ -79,18 +93,24 @@ namespace RamGecTools
         /// </summary>
         public void Uninstall()
         {
-            if (hookID == IntPtr.Zero)
+			if (keyBoardHookID != IntPtr.Zero) {
+
+				UnhookWindowsHookEx(keyBoardHookID);
+				keyBoardHookID = IntPtr.Zero;
+			}
+            if (mouseHookID == IntPtr.Zero)
                 return;
 
-            UnhookWindowsHookEx(hookID);
-            hookID = IntPtr.Zero;
+            UnhookWindowsHookEx(mouseHookID);
+            mouseHookID = IntPtr.Zero;
         }
 
         /// <summary>
         /// Destructor. Unhook current hook
         /// </summary>
-        ~MouseHook()
+        ~LowLevelnputHook()
         {
+			Console.WriteLine(System.Environment.StackTrace);
             Uninstall();
         }
 
@@ -99,10 +119,10 @@ namespace RamGecTools
         /// </summary>
         /// <param name="proc">Internal callback function</param>
         /// <returns>Hook ID</returns>
-        private IntPtr SetHook(MouseHookHandler proc)
+        private IntPtr SetHook(MouseHookHandler proc, int handle)
         {   
             using (ProcessModule module = Process.GetCurrentProcess().MainModule)
-                return SetWindowsHookEx(WH_MOUSE_LL, proc, GetModuleHandle(module.ModuleName), 0);
+                return SetWindowsHookEx(handle, proc, GetModuleHandle(module.ModuleName), 0);
         }        
 
         /// <summary>
@@ -111,7 +131,7 @@ namespace RamGecTools
         private IntPtr HookFunc(int nCode, IntPtr wParam, IntPtr lParam)
         {
             // parse system messages
-            if (nCode >= 0)
+            if (nCode >= 0 && !Guides.MainForm.paused)
             {
                 if (MouseMessages.WM_LBUTTONDOWN == (MouseMessages)wParam)
                     if (LeftButtonDown != null)
@@ -141,11 +161,29 @@ namespace RamGecTools
                     if (MiddleButtonUp != null)
                         MiddleButtonUp((MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT)));
             }
-            return CallNextHookEx(hookID, nCode, wParam, lParam);
+            return CallNextHookEx(mouseHookID, nCode, wParam, lParam);
         }
+		private IntPtr KeyBoardHookFunc(int nCode, IntPtr wParam, IntPtr lParam) {
+			// parse system messages
+			if (nCode >= 0) {
+				if (KeyBoardMessages.WM_KEYDOWN == (KeyBoardMessages)wParam) {
+					if (KeyDown != null)
+						KeyDown((Keys)Marshal.ReadInt32(lParam));
+				}
+				if (KeyBoardMessages.WM_SYSKEYDOWN == (KeyBoardMessages)wParam) {		//Need to catch SYSKEYDOWN for alt key
+					if (KeyDown != null)
+						KeyDown((Keys)Marshal.ReadInt32(lParam));
+				}
+				if (KeyBoardMessages.WM_KEYUP == (KeyBoardMessages)wParam)
+					if (KeyUp != null)
+						KeyUp((Keys)Marshal.ReadInt32(lParam));
+			}
+			return CallNextHookEx(keyBoardHookID, nCode, wParam, lParam);
+		}
 
         #region WinAPI
         private const int WH_MOUSE_LL = 14;
+		private const int WH_KEYBOARD_LL = 13;
 
         private enum MouseMessages
         {
@@ -159,9 +197,10 @@ namespace RamGecTools
             WM_MBUTTONDOWN = 0x0207,
             WM_MBUTTONUP = 0x0208
         }
-		private enum KeyMessages {
+		private enum KeyBoardMessages {
 			WM_KEYDOWN = 0x0100,
-			WM_KEYDOWN = 0x0102
+			WM_KEYUP = 0x0101,
+			WM_SYSKEYDOWN = 0x0104
 		}
 
         [StructLayout(LayoutKind.Sequential)]

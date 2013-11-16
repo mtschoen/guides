@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guides2", "Guides2\Guides2.csproj", "{9C512EBD-811E-4882-9F6B-D1A5EE4CD24B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guides", "Guides2\Guides.csproj", "{9C512EBD-811E-4882-9F6B-D1A5EE4CD24B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
