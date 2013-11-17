@@ -24,10 +24,13 @@
 /// <summary>Contains a MouseHook class for setting up low level Windows mouse hooks.</summary>
 #endregion
 
+//Updates made by Matt Schoen on 11/16/2013 to add keyboard hook
+
 using System;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Drawing;
 
 namespace RamGecTools
 {   
@@ -179,6 +182,9 @@ namespace RamGecTools
 						KeyUp((Keys)Marshal.ReadInt32(lParam));
 			}
 			return CallNextHookEx(keyBoardHookID, nCode, wParam, lParam);
+		}
+		public static Point POINTToPoint(POINT p) {
+			return new Point(p.x, p.y);
 		}
 
         #region WinAPI
