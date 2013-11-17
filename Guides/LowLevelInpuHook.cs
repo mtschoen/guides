@@ -1,4 +1,5 @@
-﻿#region Copyright
+﻿#pragma warning disable 1587
+#region Copyright
 /// <copyright>
 /// Copyright (c) 2011 Ramunas Geciauskas, http://geciauskas.com
 ///
@@ -23,6 +24,7 @@
 /// <author>Ramunas Geciauskas</author>
 /// <summary>Contains a MouseHook class for setting up low level Windows mouse hooks.</summary>
 #endregion
+#pragma warning restore 1587
 
 //Updates made by Matt Schoen on 11/16/2013 to add keyboard hook
 
@@ -52,13 +54,14 @@ namespace RamGecTools
         /// <param name="mouseStruct">MSLLHOOKSTRUCT mouse structure</param>
         public delegate void MouseHookCallback(MSLLHOOKSTRUCT mouseStruct);
 
-        /// <summary>
-        /// Function to be called when defined event occurs
-        /// </summary>
-        /// <param name="mouseStruct">MSLLHOOKSTRUCT mouse structure</param>
+       /// <summary>
+       /// Function to be called on keyboard input
+       /// </summary>
+       /// <param name="key">What key was pressed</param>
         public delegate void KeyBoardHookCallback(Keys key);
 
         #region Events
+#pragma warning disable 1591  
         public event MouseHookCallback LeftButtonDown;
         public event MouseHookCallback LeftButtonUp;
         public event MouseHookCallback RightButtonDown;
@@ -71,6 +74,7 @@ namespace RamGecTools
 
 		public event KeyBoardHookCallback KeyDown;
 		public event KeyBoardHookCallback KeyUp;
+#pragma warning restore 1591
         #endregion
 
         /// <summary>
@@ -82,7 +86,6 @@ namespace RamGecTools
         /// <summary>
         /// Install low level mouse hook
         /// </summary>
-        /// <param name="mouseHookCallbackFunc">Callback function</param>
         public void Install()
         {
 			hookHandler = HookFunc;
@@ -121,6 +124,7 @@ namespace RamGecTools
         /// Sets hook and assigns its ID for tracking
         /// </summary>
         /// <param name="proc">Internal callback function</param>
+		/// <param name="handle">Handle for resource (keyboard or mouse?)</param>
         /// <returns>Hook ID</returns>
         private IntPtr SetHook(MouseHookHandler proc, int handle)
         {   
@@ -183,6 +187,11 @@ namespace RamGecTools
 			}
 			return CallNextHookEx(keyBoardHookID, nCode, wParam, lParam);
 		}
+		/// <summary>
+		/// Convert a POINT to a Point
+		/// </summary>
+		/// <param name="p">POINT to be converted</param>
+		/// <returns>The POINT in Point form</returns>
 		public static Point POINTToPoint(POINT p) {
 			return new Point(p.x, p.y);
 		}
@@ -209,20 +218,43 @@ namespace RamGecTools
 			WM_SYSKEYDOWN = 0x0104
 		}
 
+		/// <summary>
+		/// Ad-hoc Point structure
+		/// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public struct POINT
-        {
-            public int x;
+        public struct POINT {
+
+#pragma warning disable 1591
+			public int x;
             public int y;
+#pragma warning restore 1591
         }
 
+		/// <summary>
+		/// Mouse parameters
+		/// </summary>
         [StructLayout(LayoutKind.Sequential)]
         public struct MSLLHOOKSTRUCT
         {
+			/// <summary>
+			/// Mouse position in screen coordinates
+			/// </summary>
             public POINT pt;
+			/// <summary>
+			/// Extra mouse data (contains mouse wheel ticks)
+			/// </summary>
             public uint mouseData;
+			/// <summary>
+			/// Mouse flags
+			/// </summary>
             public uint flags;
+			/// <summary>
+			/// Time of event
+			/// </summary>
             public uint time;
+			/// <summary>
+			/// Extra info
+			/// </summary>
             public IntPtr dwExtraInfo;
         }
 
@@ -230,6 +262,11 @@ namespace RamGecTools
         private static extern IntPtr SetWindowsHookEx(int idHook,
             MouseHookHandler lpfn, IntPtr hMod, uint dwThreadId);
 
+		/// <summary>
+		/// Unhook the input hook
+		/// </summary>
+		/// <param name="hhk">The IntPtr to the hook we are unhooking</param>
+		/// <returns></returns>
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool UnhookWindowsHookEx(IntPtr hhk);
