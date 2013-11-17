@@ -35,6 +35,9 @@ namespace Guides {
 			InitializeComponent();
 			// Create a simple tray menu with only one item.
 			trayMenu = new ContextMenu();
+
+			trayMenu.MenuItems.Add("Pause Input", PauseToggle);
+			trayMenu.MenuItems.Add("Clear Guides", ClearGuides);
 			trayMenu.MenuItems.Add("Exit", OnExit);
 
 			// Create a tray icon. In this example we use a
@@ -119,6 +122,12 @@ namespace Guides {
 						guide.lastActive = false;
 			}
 			Invalidate();
+		}
+		public void ClearGuides(object sender, EventArgs e) {
+			guides.Clear();
+		}
+		public void PauseToggle(object sender, EventArgs e) {
+			paused = !paused;
 		}
 		public void OnLeftMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
 			List<Guide> tmp = new List<Guide>(guides);
