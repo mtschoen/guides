@@ -24,7 +24,7 @@ namespace Guides {
 		public static bool paused;
 
 		System.Diagnostics.Stopwatch updateWatch;
-		int updateSleep = 50;								//Time between invalidates on mouse move.  Lower for smoother animation, higher for better performance
+		int updateSleep = 25;								//Time between invalidates on mouse move.  Lower for smoother animation, higher for better performance
 
 #if CONSOLE
 		[DllImport("kernel32.dll", SetLastError = true)]
