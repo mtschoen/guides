@@ -5,16 +5,19 @@ Welcome to Visual Guides for Windows.  This program is designed to provide intra
 To get started, simply run Guides.exe. 
 Mouse Input
 ===========
-- Middle-click anywhere on-screen to crate a guide there. 
+- Middle-click anywhere on-screen to crate a linear guide there. 
+- Hold CTRL and Middle-click to create a circle guide centered on your cursor.
 - Middle-click a guide again to remeove it.
 - Left-click on or near (within 6 pixels) the guide to drag it around.  Note that if you click on the guide itself, it will block the click from the program below.  The cursor will change to a finger to let you know you this is the case.
-- Right-click to swap horizontal/vertical. 
-- Right-click-drag to rotate a guide freely.
-- Right-click a rotated guide in-place to return to vertical/horizontal orientation
+- Right-click a line guide to swap horizontal/vertical. 
+- Right-click-drag a line guide to rotate a guide freely.
+- Right-click a rotated line guide in-place to return to vertical/horizontal orientation
+- Right-click-drag a circle guide to scale it
 
 Mouse Wheel
 ===========
-- Hold shift and use the mouse wheel to move horizontal or vertical guides.
+- Hold shift and use the mouse wheel with a linear guide active (cyan) to move horizontal or vertical guides.
+- Holding shift and using mouse wheel with a circle guide active will scale it.
 - Hold Alt while mouse-wheeling for more precise movement
 - Hold Ctrl while mouse-wheeling for coarse movement.
 

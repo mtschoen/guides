@@ -178,7 +178,11 @@ namespace Guides {
 				return;
 			}
 			ClearActiveGuides();
-			guides.Add(new LineGuide { location = mouseStruct.pt.x});
+			if (ctrl) {
+				guides.Add(new CircleGuide { center = LowLevelnputHook.POINTToPoint(mouseStruct.pt) });
+			} else {
+				guides.Add(new LineGuide { location = mouseStruct.pt.x });
+			}
 			Invalidate();
 		}
 		private void OnRightMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
@@ -295,22 +299,32 @@ namespace Guides {
 	/// A class to represent individual on-screen guides.  These objects draw themselves and interpret input thorugh a series of callbacks
 	/// </summary>
 	public abstract class Guide {
+		/// <summary>
+		/// How far from an intersection is considered a "hit"
+		/// </summary>
 		public static int clickMargin = 6;
 		/// <summary>
 		/// Whether this guide is being dragged
 		/// </summary>
 		public bool dragging;
 		/// <summary>
-		/// The screen location of this guide (from left if horiz, from top if vert)
-		/// </summary>
-		public int location;/// <summary>
 		/// Whether this was the last active guide (colored cyan)
 		/// </summary>
 		public bool lastActive = true;
-										 
+							
+		/// <summary>
+		/// The point where dragging started
+		/// </summary>
 		protected Point dragStart;
 
+		/// <summary>
+		/// Shared pen for drawing
+		/// </summary>
 		protected Pen pen;
+		/// <summary>
+		/// Draw function for each individual guide
+		/// </summary>
+		/// <param name="g"></param>
 		public virtual void Draw(Graphics g) {
 			pen = new Pen(Color.Red);
 			if (lastActive)
@@ -354,7 +368,8 @@ namespace Guides {
 		/// </summary>
 		/// <param name="mouseStruct">Mouse parameters</param>
 		public abstract void OnRightMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct);
-		public abstract bool Intersects(LowLevelnputHook.POINT pt);
+		public bool Intersects(LowLevelnputHook.POINT pt) { return Intersects(LowLevelnputHook.POINTToPoint(pt)); }
+		public abstract bool Intersects(Point pt);
 		/// <summary>
 		/// The Mouse wheel event
 		/// </summary>
@@ -374,6 +389,10 @@ namespace Guides {
 		/// Whether this guide is horizontal
 		/// </summary>
 		public bool horiz;
+		/// <summary>
+		/// The screen location of this guide (from left if horiz, from top if vert)
+		/// </summary>
+		public int location;
 
 		double slope, intercept, interceptHold;
 		Point rotateCenter, a, b;
@@ -488,18 +507,23 @@ namespace Guides {
 				}
 			}
 		}
-		public override bool Intersects(LowLevelnputHook.POINT pt) {
+		/// <summary>
+		/// Checks if pointer intersects within clickMargin of line
+		/// </summary>
+		/// <param name="pt"></param>
+		/// <returns></returns>
+		public override bool Intersects(Point pt) {
 			if (rotated) {
-				if (Math.Abs(pt.y - Math.Abs((pt.x * slope) + intercept)) < clickMargin) {
+				if (Math.Abs(pt.Y - Math.Abs((pt.X * slope) + intercept)) < clickMargin) {
 					return true;
 				}
 			} else {
 				if (horiz) {
-					if (Math.Abs(location - pt.y) < clickMargin) {
+					if (Math.Abs(location - pt.Y) < clickMargin) {
 						return true;
 					}
 				} else {
-					if (Math.Abs(location - pt.x) < clickMargin) {
+					if (Math.Abs(location - pt.X) < clickMargin) {
 						return true;
 					}
 				}
@@ -520,27 +544,83 @@ namespace Guides {
 			}
 		}
 	}
+	/// <summary>
+	/// Extension of Guide class to draw circular guides
+	/// </summary>
 	public class CircleGuide : Guide {
+
+		/// <summary>
+		/// The center of the circle
+		/// </summary>
+		public Point center, centerHold;
+		/// <summary>
+		/// The radius of the circle
+		/// </summary>
+		public int radius = 50;
+
+		bool scaling;
+		Rectangle circRect {
+			get {
+				return new Rectangle(center.X - radius, center.Y - radius, radius + radius, radius + radius);
+			}
+		}
+
+		/// <summary>
+		/// Draws the guide to the screen
+		/// </summary>
+		/// <param name="g"></param>
 		public override void Draw(Graphics g) {
 			base.Draw(g);
+			g.DrawEllipse(pen, circRect);
 		}
 		public override bool OnMouseMove(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			throw new NotImplementedException();
-		}
-		public override void OnMouseWheel(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct, int delta) {
-			throw new NotImplementedException();
-		}
-		public override bool OnRightMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			return base.OnRightMouseDown(mouseStruct);
-		}
-		public override void OnRightMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			throw new NotImplementedException();
+			if (dragging) {
+				center.X = centerHold.X + (mouseStruct.pt.x - dragStart.X);
+				center.Y = centerHold.Y + (mouseStruct.pt.y - dragStart.Y);
+				return true;
+			}
+			if (scaling) {
+				radius = (int)Utility.Distance(center, LowLevelnputHook.POINTToPoint(mouseStruct.pt));
+				return true;
+			}
+			return false;
 		}
 		public override bool OnLeftMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			return base.OnLeftMouseDown(mouseStruct);
+			if (base.OnLeftMouseDown(mouseStruct)) {
+				centerHold = center;
+				return true;
+			}
+			return false;
 		}
-		public override bool Intersects(LowLevelnputHook.POINT pt) {
-			throw new NotImplementedException();
+		public override bool OnRightMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+			if (base.OnRightMouseDown(mouseStruct)) {
+				scaling = true;
+				return true;
+			}
+			return false;
+		}
+		public override void OnRightMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+			scaling = false;
+		}
+		public override bool Intersects(Point pt) {
+			double dist = Utility.Distance(center, pt);
+			return dist > (radius - clickMargin) && dist < (radius + clickMargin);
+		}
+
+		public override void OnMouseWheel(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct, int delta) {
+			if (lastActive) {
+				if (mouseStruct.mouseData > 7864320)		//This is some internally defined value that I can't find
+					radius += delta;
+				else
+					radius -= delta;
+			}
+		}
+	}
+	public static class Utility {
+		public static double Distance(Point a, Point b) {
+			int dx = a.X - b.X;
+			int dy = a.Y - b.Y;
+			return Math.Sqrt(dx * dx + dy * dy);
 		}
 	}
 }
