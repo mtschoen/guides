@@ -23,6 +23,10 @@
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
     <InstallUrl>http://guides.codeplex.com/releases/clickonce/</InstallUrl>
+    <SupportUrl>https://guides.codeplex.com/</SupportUrl>
+    <ProductName>Guides</ProductName>
+    <PublisherName>Stictoitive Software</PublisherName>
+    <SuiteName>Guides</SuiteName>
     <CreateWebPageOnPublish>true</CreateWebPageOnPublish>
     <WebPage>publish.htm</WebPage>
     <ApplicationRevision>2</ApplicationRevision>
