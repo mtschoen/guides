@@ -59,5 +59,45 @@ namespace Guides.Properties {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon MainIcon {
+            get {
+                object obj = ResourceManager.GetObject("MainIcon", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon MainIconPause {
+            get {
+                object obj = ResourceManager.GetObject("MainIconPause", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon TrayIcon {
+            get {
+                object obj = ResourceManager.GetObject("TrayIcon", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon TrayIconPause {
+            get {
+                object obj = ResourceManager.GetObject("TrayIconPause", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
     }
 }

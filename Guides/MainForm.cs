@@ -33,7 +33,7 @@ namespace Guides {
 		const string showText = "Show Guides";
 		const string clearText = "Clear Guides";
 		const string exitText = "Exit";
-		const string AppName = "Guides";
+		const string AppName = "Guides 1.2";
 
 		private NotifyIcon trayIcon;
 		private ContextMenu trayMenu;
@@ -79,9 +79,6 @@ namespace Guides {
 			InitializeComponent();
 			trayMenu = new ContextMenu();
 
-			//TODO: Change tray menu item for pause state
-
-			trayMenu.MenuItems.Add("Guides 1.1.1", MenuCallback);
 			trayMenu.MenuItems.Add(pauseText, MenuCallback);
 			trayMenu.MenuItems.Add(hideText, MenuCallback);
 			trayMenu.MenuItems.Add(clearText, MenuCallback);
@@ -89,7 +86,7 @@ namespace Guides {
 
 			trayIcon = new NotifyIcon();
 			trayIcon.Text = AppName;
-			trayIcon.Icon = new Icon(Icon, 40, 40);
+			trayIcon.Icon = new Icon(Guides.Properties.Resources.TrayIcon, 40, 40);
 
 			trayIcon.ContextMenu = trayMenu;
 			trayIcon.Visible = true;
@@ -130,6 +127,8 @@ namespace Guides {
 		/// </summary>
 		/// <param name="e"></param>
 		protected override void OnPaint(PaintEventArgs e) {
+			//TODO: Add OSD for things like pause state and current coordinates
+
 			//HACK: Not sure why ctrl gets stuck on.  Here's a bandaid.
 			if (controlWatch.ElapsedMilliseconds > controlResetTime) {
 				controlWatch.Reset();
@@ -293,6 +292,13 @@ namespace Guides {
 		}
 		private void PauseToggle() {
 			paused = !paused;
+			if (paused) {
+				trayIcon.Icon = Guides.Properties.Resources.TrayIconPause;
+				Icon = Guides.Properties.Resources.MainIconPause;
+			} else {
+				trayIcon.Icon = Guides.Properties.Resources.TrayIcon;
+				Icon = Guides.Properties.Resources.MainIcon;
+			}
 			if(trayMenu.MenuItems.Count > 0)
 				trayMenu.MenuItems[0].Text = paused ? resumeText : pauseText;
 		}
