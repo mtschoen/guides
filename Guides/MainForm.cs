@@ -13,6 +13,7 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using RamGecTools;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace Guides {
 
@@ -54,9 +55,16 @@ namespace Guides {
 		/// </summary>
 		public static bool hidden;
 
-		System.Diagnostics.Stopwatch updateWatch;
+		Stopwatch controlWatch;
+		int controlResetTime = 10000;						//10000 ms before control auto resets
+		Stopwatch updateWatch;
 		int updateSleep = 25;								//Time between invalidates on mouse move.  Lower for smoother animation, higher for better performance
 
+		List<Guide> guides = new List<Guide>();
+		LowLevelnputHook inputHook;							//Need to have this in a variable to keep it from being garbage collected
+
+
+		public static bool shift, ctrl, alt;
 #if CONSOLE
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
@@ -71,6 +79,9 @@ namespace Guides {
 			InitializeComponent();
 			trayMenu = new ContextMenu();
 
+			//TODO: Change tray menu item for pause state
+
+			trayMenu.MenuItems.Add("Guides 1.1.1", MenuCallback);
 			trayMenu.MenuItems.Add(pauseText, MenuCallback);
 			trayMenu.MenuItems.Add(hideText, MenuCallback);
 			trayMenu.MenuItems.Add(clearText, MenuCallback);
@@ -89,7 +100,6 @@ namespace Guides {
 
 		}
 
-		LowLevelnputHook inputHook;
 		private void Form1_Load(object sender, EventArgs e) {
 
 			inputHook = new LowLevelnputHook();
@@ -109,17 +119,22 @@ namespace Guides {
 			ScreenHeight = Screen.FromControl(this).Bounds.Height;
 			ScreenWidth = Screen.FromControl(this).Bounds.Width;
 
-			updateWatch = new System.Diagnostics.Stopwatch();
+			updateWatch = new Stopwatch();
 			updateWatch.Start();
-		}
 
-		List<Guide> guides = new List<Guide>();
+			controlWatch = new Stopwatch();
+		}
 
 		/// <summary>
 		/// The paint function
 		/// </summary>
 		/// <param name="e"></param>
 		protected override void OnPaint(PaintEventArgs e) {
+			//HACK: Not sure why ctrl gets stuck on.  Here's a bandaid.
+			if (controlWatch.ElapsedMilliseconds > controlResetTime) {
+				controlWatch.Reset();
+				ctrl = false;
+			}
 			base.OnPaint(e);
 			e.Graphics.Clear(BackColor);
 			if (!hidden) {
@@ -215,12 +230,12 @@ namespace Guides {
 				Invalidate();
 			}
 		}
-		bool shift, ctrl, alt;
 		private void OnKeyDown(Keys key) {
 			if (key == Keys.LShiftKey || key == Keys.RShiftKey) {
 				shift = true;
 			}
 			if (key == Keys.LControlKey || key == Keys.RControlKey) {
+				controlWatch.Start();
 				ctrl = true;
 			}
 			if (key == Keys.LMenu || key == Keys.RMenu) {				//Not sure why menu here
@@ -237,6 +252,9 @@ namespace Guides {
 			}
 			if (ctrl && alt && key == Keys.Q) {							//CTRL+ALT+Q Quits
 				OnExit();
+			}
+			foreach (Guide guide in guides) {
+				guide.OnKeyDown(key);
 			}
 			Invalidate();
 		}
@@ -383,7 +401,12 @@ namespace Guides {
 		public virtual void OnLeftMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
 			dragging = false;
 		}
+
+		public abstract void OnKeyDown(Keys key);
 	}
+	/// <summary>
+	/// An extension of the Guide class that draws a line
+	/// </summary>
 	public class LineGuide : Guide{
 		/// <summary>
 		/// Whether this guide is horizontal
@@ -459,8 +482,8 @@ namespace Guides {
 		}
 
 		private void CalcPosition() {
-			a = new Point((int)(-intercept / slope), 0);
-			b = new Point((int)((MainForm.ScreenHeight - intercept) / slope), MainForm.ScreenHeight);
+			a = new Point((int)Math.Round((-intercept / slope)), 0);
+			b = new Point((int)Math.Round(((MainForm.ScreenHeight - intercept) / slope)), MainForm.ScreenHeight);
 		}
 		/// <summary>
 		/// The Down event for the select button
@@ -543,6 +566,7 @@ namespace Guides {
 					location -= delta;
 			}
 		}
+		public override void OnKeyDown(Keys key) {	}
 	}
 	/// <summary>
 	/// Extension of Guide class to draw circular guides
@@ -557,8 +581,15 @@ namespace Guides {
 		/// The radius of the circle
 		/// </summary>
 		public int radius = 50;
+		int reticuleLength = 7;
+		int radHold;
+		double centerDist, scaleDist, scaleAngle;
 
-		bool scaling;
+		bool scaling, anchorScaling, wheelScaling;
+		/// <summary>
+		/// Whether to draw reticule lines perpendicular to the horizontal/vertical tangents
+		/// </summary>
+		public bool reticule;
 		Rectangle circRect {
 			get {
 				return new Rectangle(center.X - radius, center.Y - radius, radius + radius, radius + radius);
@@ -571,20 +602,69 @@ namespace Guides {
 		/// <param name="g"></param>
 		public override void Draw(Graphics g) {
 			base.Draw(g);
+			if (anchorScaling) {
+				SolidBrush br = new SolidBrush(Color.Red);
+				g.FillEllipse(br, dragStart.X - 5, dragStart.Y - 5, 10, 10);
+			}
 			g.DrawEllipse(pen, circRect);
+			pen.Color = Color.Black;
+			pen.Width = 1;
+			if (reticule) {
+				g.DrawLine(pen, center.X, center.Y + radius + reticuleLength, center.X, center.Y + radius - reticuleLength);
+				g.DrawLine(pen, center.X + radius + reticuleLength, center.Y, center.X + radius - reticuleLength, center.Y);
+				g.DrawLine(pen, center.X, center.Y - radius + reticuleLength, center.X, center.Y - radius - reticuleLength);
+				g.DrawLine(pen, center.X - radius + reticuleLength, center.Y, center.X - radius - reticuleLength, center.Y);
+			}
 		}
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="mouseStruct"></param>
+		/// <returns></returns>
 		public override bool OnMouseMove(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+			Point mousePoint = LowLevelnputHook.POINTToPoint(mouseStruct.pt);
 			if (dragging) {
-				center.X = centerHold.X + (mouseStruct.pt.x - dragStart.X);
-				center.Y = centerHold.Y + (mouseStruct.pt.y - dragStart.Y);
+				center.X = centerHold.X + (mousePoint.X - dragStart.X);
+				center.Y = centerHold.Y + (mousePoint.Y - dragStart.Y);
 				return true;
 			}
 			if (scaling) {
-				radius = (int)Utility.Distance(center, LowLevelnputHook.POINTToPoint(mouseStruct.pt));
+				if (anchorScaling) {
+					if (!wheelScaling)
+						scaleDist = Utility.Distance(dragStart, mousePoint);
+					AnchorScale(mousePoint, scaleDist);
+				} else {
+					radius = (int)Utility.Distance(center, mousePoint);
+				}
 				return true;
 			}
 			return false;
 		}
+
+		private void AnchorScale(Point mousePoint, double dist) {
+			radius = radHold + (int)Math.Round(dist);
+			double dx = dragStart.X - mousePoint.X;
+			double dy = dragStart.Y - mousePoint.Y;
+			if (dx != 0) {
+				double tmpDist = centerDist + dist;
+				if(!MainForm.alt)
+					scaleAngle = Math.Atan(dy / dx);
+				if (dx < 0) {
+					dx = Math.Cos(scaleAngle) * (centerDist + dist);
+					dy = Math.Sin(scaleAngle) * (centerDist + dist);
+				} else {
+					dx = -Math.Cos(scaleAngle) * (centerDist + dist);
+					dy = -Math.Sin(scaleAngle) * (centerDist + dist);
+				}
+				center.X = dragStart.X + (int)Math.Round(dx);
+				center.Y = dragStart.Y + (int)Math.Round(dy);
+			}
+		}  
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="mouseStruct"></param>
+		/// <returns></returns>
 		public override bool OnLeftMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
 			if (base.OnLeftMouseDown(mouseStruct)) {
 				centerHold = center;
@@ -592,31 +672,83 @@ namespace Guides {
 			}
 			return false;
 		}
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="mouseStruct"></param>
+		/// <returns></returns>
 		public override bool OnRightMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
 			if (base.OnRightMouseDown(mouseStruct)) {
+				if (MainForm.shift) {
+					Point mousePoint = LowLevelnputHook.POINTToPoint(mouseStruct.pt);
+					anchorScaling = true;
+					centerDist = Utility.Distance(center, mousePoint);
+					radHold = radius;
+					dragStart = mousePoint;
+				}
+				wheelScaling = false;
 				scaling = true;
 				return true;
 			}
 			return false;
 		}
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="mouseStruct"></param>
 		public override void OnRightMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
 			scaling = false;
+			anchorScaling = false;
 		}
+		/// <summary>
+		/// Check if a point is on the circle itself.  Does this by checking if distance from point to radius is within clickMargin of the circle's radius
+		/// </summary>
+		/// <param name="pt">The point</param>
+		/// <returns></returns>
 		public override bool Intersects(Point pt) {
 			double dist = Utility.Distance(center, pt);
 			return dist > (radius - clickMargin) && dist < (radius + clickMargin);
 		}
 
+		/// <summary>
+		/// MouseWheel delegate
+		/// </summary>
+		/// <param name="mouseStruct"></param>
+		/// <param name="delta"></param>
 		public override void OnMouseWheel(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct, int delta) {
 			if (lastActive) {
+				wheelScaling = true;
 				if (mouseStruct.mouseData > 7864320)		//This is some internally defined value that I can't find
+					delta = -delta;
+				if (anchorScaling) {
+					scaleDist += delta;
+					AnchorScale(LowLevelnputHook.POINTToPoint(mouseStruct.pt), scaleDist);
+				} else
 					radius += delta;
-				else
-					radius -= delta;
+			}
+		}
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="key"></param>
+		public override void OnKeyDown(Keys key) {
+			if (lastActive) {
+				if (MainForm.ctrl && MainForm.alt && key == Keys.R)
+					reticule = !reticule;
+				Console.WriteLine(reticule);
 			}
 		}
 	}
+	/// <summary>
+	/// 
+	/// </summary>
 	public static class Utility {
+		/// <summary>
+		/// Returns the distance between two points
+		/// </summary>
+		/// <param name="a"></param>
+		/// <param name="b"></param>
+		/// <returns></returns>
 		public static double Distance(Point a, Point b) {
 			int dx = a.X - b.X;
 			int dy = a.Y - b.Y;
