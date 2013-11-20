@@ -1,4 +1,4 @@
-Guides
+Guides v1.2
 ======
 Welcome to Visual Guides for Windows.  This program is designed to provide intractive guide lines over any programs in Windows to help you line things up and generally design better.
 
@@ -13,11 +13,14 @@ Mouse Input
 - Right-click-drag a line guide to rotate a guide freely.
 - Right-click a rotated line guide in-place to return to vertical/horizontal orientation
 - Right-click-drag a circle guide to scale it
+- Right-click-drag while holding shift on a circle guide to scale it using the place where you clicked as an anchor point
+- Hold alt while doing the above to freeze the guide in place while you scale it
 
 Mouse Wheel
 ===========
 - Hold shift and use the mouse wheel with a linear guide active (cyan) to move horizontal or vertical guides.
 - Holding shift and using mouse wheel with a circle guide active will scale it.
+- Scaling a circle guide with the wheel while you're in anchor scale mode will switch scale control to the wheel until you release the mouse button
 - Hold Alt while mouse-wheeling for more precise movement
 - Hold Ctrl while mouse-wheeling for coarse movement.
 
