@@ -160,9 +160,9 @@ namespace Guides {
 				}
 				ResetAllGuidesActive();
 				if(Program.ctrl) {
-					guides.Add(new CircleGuide { owner = this, center = offset });
+					guides.Add(new CircleGuide(this, offset));
 				} else {
-					guides.Add(new LineGuide { owner = this, location = offset.X });
+					guides.Add(new LineGuide(this, offset.X));
 				}
 				Invalidate();
 			}
@@ -224,8 +224,10 @@ namespace Guides {
 		/// <param name="key">What key is pressed</param>
 		public void OnKeyDown(Keys key) {
 			if(guides.Count > 0) {
+				bool invalidate = false;
 				foreach(Guide guide in guides) {
-					guide.OnKeyDown(key);
+					if(guide.OnKeyDown(key))
+						invalidate = true;
 				}
 				Invalidate();
 			}
@@ -299,7 +301,6 @@ namespace Guides {
 		/// <summary>
 		/// Whether this was the last active guide (colored cyan)
 		/// </summary>
-		[DefaultValue(true)]
 		public bool active { get; set; }
 		/// <summary>
 		/// The form that owns this guide
@@ -315,6 +316,13 @@ namespace Guides {
 		/// Shared pen for drawing
 		/// </summary>
 		protected Pen pen { get; set; }
+
+		public Guide(MainForm owner) {
+			if(owner == null)
+				throw new ArgumentNullException();
+			this.owner = owner;
+			active = true;
+		}
 		/// <summary>
 		/// Draw function for each individual guide
 		/// </summary>
@@ -386,7 +394,7 @@ namespace Guides {
 		/// Key Down Event
 		/// </summary>
 		/// <param name="key">What key is pressed</param>
-		public virtual void OnKeyDown(Keys key) { }
+		public virtual bool OnKeyDown(Keys key) { return false; }
 
 		/// <summary>
 		/// Dispose method (disposes pen if exists)
@@ -417,7 +425,6 @@ namespace Guides {
 		/// <summary>
 		/// The screen location of this guide (from left if horiz, from top if vert)
 		/// </summary>
-		[DefaultValue(50)]
 		public int location { get; set; }
 
 		double slope, intercept, interceptHold;
@@ -425,6 +432,10 @@ namespace Guides {
 		bool rotating;
 		bool rotated, showRotated;						//Showrotated is separated out so that the OnRotateDown doesn't cancel rotation prematurely
 
+		public LineGuide(MainForm owner, int location) : base(owner) {
+			this.location = location;
+		}
+		
 		/// <summary>
 		/// Draws the guide
 		/// </summary>
@@ -585,7 +596,6 @@ namespace Guides {
 		/// <summary>
 		/// The radius of the circle
 		/// </summary>
-		[DefaultValue(50)]
 		public int radius { get; set; }
 		int reticuleLength = 7;
 		int radHold;
@@ -600,6 +610,13 @@ namespace Guides {
 			get {
 				return new Rectangle(center.X - radius, center.Y - radius, radius + radius, radius + radius);
 			}
+		}
+
+		public CircleGuide(MainForm owner, Point center) : this(owner, center, 50) { }
+		public CircleGuide(MainForm owner, Point center, int radius)
+			: base(owner) {
+				this.center = center;
+				this.radius = radius;
 		}
 
 		/// <summary>
@@ -738,11 +755,14 @@ namespace Guides {
 		/// Key Down response
 		/// </summary>
 		/// <param name="key">What key was pressed</param>
-		public override void OnKeyDown(Keys key) {
+		public override bool OnKeyDown(Keys key) {
 			if (active) {
-				if(Program.ctrl && Program.alt && key == Keys.R)
+				if(Program.ctrl && Program.alt && key == Keys.R) {
 					reticule = !reticule;
+					return true;
+				}
 			}
+			return false;
 		}
 	}
 	/// <summary>
