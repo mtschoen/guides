@@ -12,7 +12,6 @@
 		protected override void Dispose(bool disposing) {
 			if (disposing && (components != null)) {
 				components.Dispose();
-				trayIcon.Dispose();
 			}
 			base.Dispose(disposing);
 		}

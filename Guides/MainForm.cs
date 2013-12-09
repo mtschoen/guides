@@ -1,6 +1,4 @@
-﻿//#define CONSOLE
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -11,9 +9,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Input;
-using RamGecTools;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
+using InputHook;
 
 namespace Guides {
 
@@ -27,99 +24,44 @@ namespace Guides {
 	/// </summary>
 	public partial class MainForm : Form {
 
-		const string pauseText = "Pause Input";
-		const string resumeText = "Resume Input";
-		const string hideText = "Hide Guides";
-		const string showText = "Show Guides";
-		const string clearText = "Clear Guides";
-		const string exitText = "Exit";
-		const string AppName = "Guides 1.2";
-
-		private NotifyIcon trayIcon;
-		private ContextMenu trayMenu;
-
 		/// <summary>
 		/// The Height of the screen
 		/// </summary>
-		public static int ScreenHeight;
+		public int ScreenHeight;
 		/// <summary>
 		/// The Width of the screen
 		/// </summary>
-		public static int ScreenWidth;
+		public int ScreenWidth;
 		/// <summary>
-		/// Whether we are listening to input (listening when false)
+		/// The X position of the screen
 		/// </summary>
-		public static bool paused;
+		public int ScreenOffsetX;
 		/// <summary>
-		/// Whether to draw the guides to the screen
+		/// The Y position of the screen
 		/// </summary>
-		public static bool hidden;
+		public int ScreenOffsetY;
 
-		Stopwatch controlWatch;
-		int controlResetTime = 10000;						//10000 ms before control auto resets
 		Stopwatch updateWatch;
 		int updateSleep = 25;								//Time between invalidates on mouse move.  Lower for smoother animation, higher for better performance
 
 		List<Guide> guides = new List<Guide>();
-		LowLevelnputHook inputHook;							//Need to have this in a variable to keep it from being garbage collected
-
-
-		public static bool shift, ctrl, alt;
-#if CONSOLE
-		[DllImport("kernel32.dll", SetLastError = true)]
-		[return: MarshalAs(UnmanagedType.Bool)]
-		static extern bool AllocConsole();
-#endif
 
 		/// <summary>
 		/// Form constructor
 		/// </summary>
 		public MainForm() {
-
 			InitializeComponent();
-			trayMenu = new ContextMenu();
-
-			trayMenu.MenuItems.Add(pauseText, MenuCallback);
-			trayMenu.MenuItems.Add(hideText, MenuCallback);
-			trayMenu.MenuItems.Add(clearText, MenuCallback);
-			trayMenu.MenuItems.Add(exitText, MenuCallback);
-
-			trayIcon = new NotifyIcon();
-			trayIcon.Text = AppName;
-			trayIcon.Icon = new Icon(Guides.Properties.Resources.TrayIcon, 40, 40);
-
-			trayIcon.ContextMenu = trayMenu;
-			trayIcon.Visible = true;
-
-#if CONSOLE
-			AllocConsole();
-#endif
-
 		}
 
 		private void Form1_Load(object sender, EventArgs e) {
-
-			inputHook = new LowLevelnputHook();
-			inputHook.MouseMove += new LowLevelnputHook.MouseHookCallback(OnMouseMove);
-			inputHook.LeftButtonDown += new LowLevelnputHook.MouseHookCallback(OnLeftMouseDown);
-			inputHook.LeftButtonUp += new LowLevelnputHook.MouseHookCallback(OnLeftMouseUp);
-			inputHook.RightButtonDown += new LowLevelnputHook.MouseHookCallback(OnRightMouseDown);
-			inputHook.RightButtonUp += new LowLevelnputHook.MouseHookCallback(OnRightMouseUp);
-			inputHook.MiddleButtonDown += new LowLevelnputHook.MouseHookCallback(OnMiddleMousedown);
-			inputHook.MouseWheel += new LowLevelnputHook.MouseHookCallback(OnMouseWheel);
-
-			inputHook.KeyDown += new LowLevelnputHook.KeyBoardHookCallback(OnKeyDown);
-			inputHook.KeyUp += new LowLevelnputHook.KeyBoardHookCallback(OnKeyUp);
-
-			inputHook.Install();
-
-			ScreenHeight = Screen.FromControl(this).Bounds.Height;
-			ScreenWidth = Screen.FromControl(this).Bounds.Width;
+			Screen screen = Screen.FromControl(this);
+			ScreenHeight = screen.Bounds.Height;
+			ScreenWidth = screen.Bounds.Width;
+			ScreenOffsetX = screen.Bounds.X;
+			ScreenOffsetY = screen.Bounds.Y;
 
 			updateWatch = new Stopwatch();
 			updateWatch.Start();
-
-			controlWatch = new Stopwatch();
 		}
 
 		/// <summary>
@@ -130,199 +72,218 @@ namespace Guides {
 			//TODO: Add OSD for things like pause state and current coordinates
 
 			//HACK: Not sure why ctrl gets stuck on.  Here's a bandaid.
-			if (controlWatch.ElapsedMilliseconds > controlResetTime) {
-				controlWatch.Reset();
-				ctrl = false;
+			if(Program.controlWatch.ElapsedMilliseconds > Program.controlResetTime) {
+				Program.controlWatch.Reset();
+				Program.ctrl = false;
 			}
 			base.OnPaint(e);
 			e.Graphics.Clear(BackColor);
-			if (!hidden) {
+			if (!Program.hidden) {
 				foreach (Guide guide in guides)
 					guide.Draw(e.Graphics);
 			}
 		}
-		private void OnMouseMove(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			if (guides.Count > 0) {
-				bool hit = false;
-				foreach (Guide guide in guides) {
-					if (guide.OnMouseMove(mouseStruct)) {
-						hit = true;
+		/// <summary>
+		/// Mouse Move event
+		/// </summary>
+		/// <param name="mouseStruct">The mouse parameters</param>
+		public void OnMouseMove(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+			Point offset;
+			if(guides.Count > 0 && updateWatch.ElapsedMilliseconds > updateSleep && ScreenInit(mouseStruct.pt, out offset)) {
+				if(guides.Count > 0) {
+					bool hit = false;
+					foreach(Guide guide in guides) {
+						if(guide.OnMouseMove(offset)) {
+							hit = true;
+							break;
+						}
+					}
+					if(hit) {					//Don't invalidate every time or we slow the computer down
+						Invalidate();
+						updateWatch.Restart();
+					}
+				}
+			}
+		}
+		/// <summary>
+		/// Mouse Down event for Left mouse button
+		/// </summary>
+		/// <param name="mouseStruct">The mouse parameters</param>
+		public void OnLeftMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+			Point offset;
+			if(ScreenInit(mouseStruct.pt, out offset)) {
+				Guide hit = null;
+				foreach(Guide guide in guides) {
+					if(guide.OnLeftMouseDown(offset)) {
+						hit = guide;
 						break;
 					}
 				}
+				if(hit != null) {
+					ClearActiveGuides(hit);
+				}
+				Invalidate();
+			}
+		}
 
-				if (hit && updateWatch.ElapsedMilliseconds > updateSleep) {					//Don't invalidate every time or we slow the computer down
+		/// <summary>
+		/// Mouse Up event for Left mouse button
+		/// </summary>
+		/// <param name="mouseStruct">The mouse parameters</param>
+		public void OnLeftMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {	
+			Point offset;
+			if(ScreenInit(mouseStruct.pt, out offset)) {
+				foreach(Guide guide in guides)
+					guide.OnLeftMouseUp(offset);
+				Invalidate();
+			}
+		}
+
+		/// <summary>
+		/// Mouse Down event for Middle mouse button
+		/// </summary>
+		/// <param name="mouseStruct">The mouse parameters</param>
+		public void OnMiddleMousedown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+			Point offset;
+			if(ScreenInit(mouseStruct.pt, out offset)) {
+				Guide hit = null;
+				foreach(Guide guide in guides) {
+					if(guide.OnLeftMouseDown(offset)) {	//Use left button down to do the same as "select"
+						hit = guide;
+						break;
+					}
+				}
+				if(hit != null) {
+					guides.Remove(hit);
 					Invalidate();
-					updateWatch.Restart();
+					return;
 				}
-			}
-		}
-		private void OnLeftMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			Guide hit = null;
-			foreach (Guide guide in guides) {
-				if (guide.OnLeftMouseDown(mouseStruct)) {
-					hit = guide;
-					break;
+				ClearActiveGuides();
+				if(Program.ctrl) {
+					guides.Add(new CircleGuide { owner = this, center = offset });
+				} else {
+					guides.Add(new LineGuide { owner = this, location = offset.X });
 				}
-			}
-			if (hit != null) {
-				ClearActiveGuides(hit);
-			}
-			Invalidate();
-		}
-
-		private void OnLeftMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			foreach (Guide guide in guides)
-				guide.OnLeftMouseUp(mouseStruct);
-			Invalidate();
-		}
-
-		private void OnMiddleMousedown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			Console.WriteLine("Add Guide");
-			Guide hit = null;
-			foreach (Guide guide in guides) {
-				if (guide.OnLeftMouseDown(mouseStruct)) {	//Use left button down to do the same as "select"
-					hit = guide;
-					break;
-				}
-			}
-			if (hit != null) {
-				guides.Remove(hit);
-				Invalidate();
-				return;
-			}
-			ClearActiveGuides();
-			if (ctrl) {
-				guides.Add(new CircleGuide { center = LowLevelnputHook.POINTToPoint(mouseStruct.pt) });
-			} else {
-				guides.Add(new LineGuide { location = mouseStruct.pt.x });
-			}
-			Invalidate();
-		}
-		private void OnRightMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			Guide hit = null;
-			foreach (Guide guide in guides) {
-				if(guide.OnRightMouseDown(mouseStruct)){
-					hit = guide;
-					break;
-				}
-			}
-			if (hit != null) {
-				ClearActiveGuides(hit);
-			}
-			Invalidate();
-		}
-		private void OnRightMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			foreach (Guide guide in guides)
-				guide.OnRightMouseUp(mouseStruct);
-			Invalidate();
-		}
-		private void OnMouseWheel(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			if (shift) {
-				int delta = 5;
-				if (ctrl)
-					delta = 10;
-				if (alt)
-					delta = 1;
-				foreach (Guide guide in guides)
-					guide.OnMouseWheel(mouseStruct, delta);
 				Invalidate();
 			}
 		}
-		private void OnKeyDown(Keys key) {
-			if (key == Keys.LShiftKey || key == Keys.RShiftKey) {
-				shift = true;
-			}
-			if (key == Keys.LControlKey || key == Keys.RControlKey) {
-				controlWatch.Start();
-				ctrl = true;
-			}
-			if (key == Keys.LMenu || key == Keys.RMenu) {				//Not sure why menu here
-				alt = true;
-			}
-			if (ctrl && alt && key == Keys.C) {							//CTRL+ALT+C clears guides
-				ClearGuides();
-			}
-			if (ctrl && alt && key == Keys.P) {							//CTRL+ALT+P pauses
-				PauseToggle();
-			}
-			if (ctrl && alt && key == Keys.H) {							//CTRL+ALT+H Show/hides
-				ShowToggle();
-			}
-			if (ctrl && alt && key == Keys.Q) {							//CTRL+ALT+Q Quits
-				OnExit();
-			}
-			foreach (Guide guide in guides) {
-				guide.OnKeyDown(key);
-			}
-			Invalidate();
-		}
-		private void OnKeyUp(Keys key) {
-			if (key == Keys.LShiftKey || key == Keys.RShiftKey) {
-				shift = false;
-			}
-			if (key == Keys.LControlKey || key == Keys.RControlKey) {
-				ctrl = false;
-			}
-			if (key == Keys.LMenu || key == Keys.RMenu) {
-				alt = false;
-			}
-			Invalidate();
-		}
-
-		private void MenuCallback(object sender, EventArgs e) {
-			switch(((MenuItem)sender).Text){
-				case pauseText: case resumeText:
-					PauseToggle();
-					break;
-				case showText: case hideText:
-					ShowToggle();
-					break;
-				case clearText:
-					ClearGuides();
-					break;
-				case exitText:
-					OnExit();
-					break;
+		/// <summary>
+		/// Mouse Down event for Rigth mosue button
+		/// </summary>
+		/// <param name="mouseStruct">The mouse parameters</param>
+		public void OnRightMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {		
+			Point offset;
+			if(ScreenInit(mouseStruct.pt, out offset)) {
+				Guide hit = null;
+				foreach(Guide guide in guides) {
+					if(guide.OnRightMouseDown(offset)) {
+						hit = guide;
+						break;
+					}
+				}
+				if(hit != null) {
+					ClearActiveGuides(hit);
+				}
+				Invalidate();
 			}
 		}
-		private void ClearGuides() {
+		/// <summary>
+		/// Mouse Up event for Right mouse button
+		/// </summary>
+		/// <param name="mouseStruct">The mouse parameters</param>
+		public void OnRightMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+			Point offset;
+			if(ScreenInit(mouseStruct.pt, out offset)) {
+				foreach(Guide guide in guides)
+					guide.OnRightMouseUp(offset);
+				Invalidate();
+			}
+		}
+		/// <summary>
+		/// Mouse Wheel response
+		/// </summary>
+		/// <param name="mouseStruct">The mouse parameters</param>
+		public void OnMouseWheel(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+			Point offset;
+			if(ScreenInit(mouseStruct.pt, out offset)) {
+				if(Program.shift) {
+					int delta = 5;
+					if(Program.ctrl)
+						delta = 10;
+					if(Program.alt)
+						delta = 1;
+					foreach(Guide guide in guides)
+						guide.OnMouseWheel(offset, mouseStruct.mouseData, delta);
+					Invalidate();
+				}
+			}
+		}
+		/// <summary>
+		/// KeyDown response
+		/// </summary>
+		/// <param name="key">What key is pressed</param>
+		public void OnKeyDown(Keys key) {
+			if(guides.Count > 0) {
+				foreach(Guide guide in guides) {
+					guide.OnKeyDown(key);
+				}
+				Invalidate();
+			}
+		}
+		/// <summary>
+		/// Clear the guides array
+		/// </summary>
+		public void ClearGuides() {
 			guides.Clear();
 			Invalidate();
 		}
-		private void PauseToggle() {
-			paused = !paused;
-			if (paused) {
-				trayIcon.Icon = Guides.Properties.Resources.TrayIconPause;
+		/// <summary>
+		/// Toggling pause state
+		/// </summary>
+		public void PauseToggle() {
+			if (Program.paused) {
 				Icon = Guides.Properties.Resources.MainIconPause;
 			} else {
-				trayIcon.Icon = Guides.Properties.Resources.TrayIcon;
 				Icon = Guides.Properties.Resources.MainIcon;
 			}
-			if(trayMenu.MenuItems.Count > 0)
-				trayMenu.MenuItems[0].Text = paused ? resumeText : pauseText;
 		}
-		private void ShowToggle() {
-			hidden = !hidden;
-			paused = hidden;
-			if (trayMenu.MenuItems.Count > 0)
-				trayMenu.MenuItems[1].Text = hidden ? showText : hideText;
+		/// <summary>
+		/// Called when Show Guides is toggled.  This just calls Invalidate to update drawing
+		/// </summary>
+		public void ShowToggle() {
 			Invalidate();
 		}
-		private void ClearActiveGuides(Guide except = null) {
+		/// <summary>
+		/// Clears the lastActive state on all guides except the optional parameter.  If no parameter is set, all guides are cleared
+		/// </summary>
+		/// <param name="except">The guide to ignore</param>
+		public void ClearActiveGuides(Guide except = null) {
 			foreach (Guide guide in guides)
 				if(guide != except)
 					guide.lastActive = false;
 		}
-		
-		private void OnExit() {
-			Application.Exit();
+		/// <summary>
+		/// Returns true if mousePoint is within this form's screen.  Also converts global screen coordinates to 
+		/// window coordinates.  The out parameter point will contain the converted coordinates
+		/// </summary>
+		/// <param name="mousePoint">Input point for check and conversion</param>
+		/// <param name="point">Converted point in window coordinates</param>
+		/// <returns></returns>
+		public bool ScreenInit(LowLevelnputHook.POINT mousePoint, out Point point) {
+			point = new Point();
+			if(mousePoint.x > ScreenOffsetX && mousePoint.x < ScreenOffsetX + ScreenWidth &&
+				mousePoint.y > ScreenOffsetY && mousePoint.y < ScreenOffsetY + ScreenHeight) {
+				point.X = mousePoint.x - ScreenOffsetX;
+				point.Y = mousePoint.y - ScreenOffsetY;
+				return true;
+			}
+			return false;
 		}
 	}
 	/// <summary>
 	/// A class to represent individual on-screen guides.  These objects draw themselves and interpret input thorugh a series of callbacks
 	/// </summary>
-	public abstract class Guide {
+	public abstract class Guide : IDisposable {
 		/// <summary>
 		/// How far from an intersection is considered a "hit"
 		/// </summary>
@@ -335,6 +296,10 @@ namespace Guides {
 		/// Whether this was the last active guide (colored cyan)
 		/// </summary>
 		public bool lastActive = true;
+		/// <summary>
+		/// The form that owns this guide
+		/// </summary>
+		public MainForm owner;
 							
 		/// <summary>
 		/// The point where dragging started
@@ -358,19 +323,19 @@ namespace Guides {
 		/// <summary>
 		/// Respond to mouse motion
 		/// </summary>
-		/// <param name="mouseStruct">Mouse parameters</param>
+		/// <param name="mousePoint">Mouse parameters</param>
 		/// <returns>True if this guide did anything</returns>
-		public abstract bool OnMouseMove(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct);
+		public abstract bool OnMouseMove(Point mousePoint);
 
 		/// <summary>
 		/// The Down event for the select button
 		/// </summary>
-		/// <param name="mouseStruct">Mouse parameters</param>
+		/// <param name="mousePoint">Mouse parameters</param>
 		/// <returns>True if the mouse is over this guide</returns>
-		public virtual bool OnLeftMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			if (Intersects(mouseStruct.pt)) {
+		public virtual bool OnLeftMouseDown(Point mousePoint) {
+			if (Intersects(mousePoint)) {
 				lastActive = dragging = true;
-				dragStart = LowLevelnputHook.POINTToPoint(mouseStruct.pt);
+				dragStart = mousePoint;
 				return true;
 			}
 			return false;
@@ -378,10 +343,10 @@ namespace Guides {
 		/// <summary>
 		/// The Down event for the rotate button
 		/// </summary>
-		/// <param name="mouseStruct">Mouse parameters</param>
+		/// <param name="mousePoint">Mouse parameters</param>
 		/// <returns>True if the mouse is over this guide</returns>
-		public virtual bool OnRightMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			if (Intersects(mouseStruct.pt)) {
+		public virtual bool OnRightMouseDown(Point mousePoint) {
+			if (Intersects(mousePoint)) {
 				lastActive = true;
 				return true;
 			}
@@ -390,25 +355,51 @@ namespace Guides {
 		/// <summary>
 		/// The Up event for the rotate button
 		/// </summary>
-		/// <param name="mouseStruct">Mouse parameters</param>
-		public abstract void OnRightMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct);
-		public bool Intersects(LowLevelnputHook.POINT pt) { return Intersects(LowLevelnputHook.POINTToPoint(pt)); }
+		/// <param name="mousePoint">Mouse parameters</param>
+		public abstract void OnRightMouseUp(Point mousePoint);
+		/// <summary>
+		/// Retruns true if the point is within clickMargin of the guide
+		/// </summary>
+		/// <param name="pt">Test point</param>
+		/// <returns></returns>
 		public abstract bool Intersects(Point pt);
 		/// <summary>
 		/// The Mouse wheel event
-		/// </summary>
-		/// <param name="mouseStruct">Mouse parameters</param>
+		/// </summary>													   
+		/// <param name="mousePoint">Where the mouse is</param>
+		/// <param name="mouseData">A number signifying whether the wheel is rotating up or down</param>
 		/// <param name="delta">How far to move the guide per click</param>
-		public abstract void OnMouseWheel(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct, int delta);
+		public abstract void OnMouseWheel(Point mousePoint, uint mouseData, int delta);
 		/// <summary>
 		/// The Up event for the select button
 		/// </summary>
-		/// <param name="mouseStruct">Mouse parameters</param>
-		public virtual void OnLeftMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		/// <param name="mousePoint">Mouse position</param>
+		public virtual void OnLeftMouseUp(Point mousePoint) {
 			dragging = false;
 		}
+		/// <summary>
+		/// Key Down Event
+		/// </summary>
+		/// <param name="key">What key is pressed</param>
+		public virtual void OnKeyDown(Keys key) { }
 
-		public abstract void OnKeyDown(Keys key);
+		/// <summary>
+		/// Dispose method (disposes pen if exists)
+		/// </summary>
+		/// <param name="disposing"></param>
+		protected virtual void Dispose(bool disposing) {
+			if(disposing) {
+				if(pen != null)
+					pen.Dispose();
+			}
+		}
+		/// <summary>
+		/// Dispose method (disposes pen if exists)
+		/// </summary>
+		public void Dispose() {
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
 	}
 	/// <summary>
 	/// An extension of the Guide class that draws a line
@@ -438,48 +429,50 @@ namespace Guides {
 				SolidBrush br = new SolidBrush(Color.Red);
 				g.FillEllipse(br, rotateCenter.X - 5, rotateCenter.Y - 5, 10, 10);
 				g.DrawLine(pen, a, b);
+				br.Dispose();
 			} else {
 				if (horiz)
-					g.DrawLine(pen, 0, location, MainForm.ScreenWidth, location);
+					g.DrawLine(pen, 0, location, owner.ScreenWidth, location);
 				else
-					g.DrawLine(pen, location, 0, location, MainForm.ScreenHeight);
+					g.DrawLine(pen, location, 0, location, owner.ScreenHeight);
 			}
+			pen.Dispose();
 		}
 		/// <summary>
 		/// Respond to mouse motion
 		/// </summary>
-		/// <param name="mouseStruct">Mouse parameters</param>
+		/// <param name="mousePoint">Mouse position</param>
 		/// <returns>True if this guide did anything</returns>
-		public override bool OnMouseMove(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		public override bool OnMouseMove(Point mousePoint) {
 			if (dragging) {
 				if (rotated) {
-					intercept = interceptHold + mouseStruct.pt.y - dragStart.Y
-						- (mouseStruct.pt.x - dragStart.X) * slope;
+					intercept = interceptHold + mousePoint.Y - dragStart.Y
+						- (mousePoint.X - dragStart.X) * slope;
 					CalcPosition();
 				} else {
 					if (horiz) {
-						location = mouseStruct.pt.y;
+						location = mousePoint.Y;
 					} else {
-						location = mouseStruct.pt.x;
+						location = mousePoint.X;
 					}
 				}
 				return true;
 			}
 			if (rotating) {
 				showRotated = rotated = true;
-				if (rotateCenter.X == mouseStruct.pt.x){
+				if (rotateCenter.X == mousePoint.X){
 					rotated = false;
 					horiz = false;
-					location = mouseStruct.pt.x;
+					location = mousePoint.X;
 					return true;
 				}
-				if(rotateCenter.Y == mouseStruct.pt.y) {
+				if(rotateCenter.Y == mousePoint.Y) {
 					rotated = false;
 					horiz = true;
-					location = mouseStruct.pt.y;
+					location = mousePoint.Y;
 					return true;
 				}
-				slope = (double)(rotateCenter.Y - mouseStruct.pt.y) / (rotateCenter.X - mouseStruct.pt.x);
+				slope = (double)(rotateCenter.Y - mousePoint.Y) / (rotateCenter.X - mousePoint.X);
 				intercept = rotateCenter.Y - (slope * rotateCenter.X);
 				CalcPosition();
 				return true;
@@ -489,15 +482,15 @@ namespace Guides {
 
 		private void CalcPosition() {
 			a = new Point((int)Math.Round((-intercept / slope)), 0);
-			b = new Point((int)Math.Round(((MainForm.ScreenHeight - intercept) / slope)), MainForm.ScreenHeight);
+			b = new Point((int)Math.Round(((owner.ScreenHeight - intercept) / slope)), owner.ScreenHeight);
 		}
 		/// <summary>
 		/// The Down event for the select button
 		/// </summary>
-		/// <param name="mouseStruct">Mouse parameters</param>
+		/// <param name="mousePoint">Mouse position</param>
 		/// <returns>True if the mouse is over this guide</returns>
-		public override bool OnLeftMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			if(base.OnLeftMouseDown(mouseStruct)){
+		public override bool OnLeftMouseDown(Point mousePoint) {
+			if(base.OnLeftMouseDown(mousePoint)) {
 				interceptHold = intercept;
 				return true;
 			}
@@ -506,13 +499,12 @@ namespace Guides {
 		/// <summary>
 		/// The Down event for the rotate button
 		/// </summary>
-		/// <param name="mouseStruct">Mouse parameters</param>
-		/// <returns>True if the mouse is over this guide</returns>
-		public override bool OnRightMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			if (base.OnRightMouseDown(mouseStruct)) {
+		/// <param name="mousePoint">Mouse position</param>
+		public override bool OnRightMouseDown(Point mousePoint) {
+			if(base.OnRightMouseDown(mousePoint)) {
 				rotating = true;
 				rotated = false;
-				rotateCenter = LowLevelnputHook.POINTToPoint(mouseStruct.pt);
+				rotateCenter = mousePoint;
 				return true;
 			}
 			return false;
@@ -520,18 +512,18 @@ namespace Guides {
 		/// <summary>
 		/// The Up event for the rotate button
 		/// </summary>
-		/// <param name="mouseStruct">Mouse parameters</param>
-		public override void OnRightMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		/// <param name="mousePoint">Mouse position</param>
+		public override void OnRightMouseUp(Point mousePoint) {
 			rotating = false;
 			showRotated = rotated;
 			if (horiz) {
-				if (Intersects(mouseStruct.pt)) {
-					location = mouseStruct.pt.x;
+				if(Intersects(mousePoint)) {
+					location = mousePoint.X;
 					horiz = false;
 				}
 			} else {
-				if (Intersects(mouseStruct.pt)) {
-					location = mouseStruct.pt.y;
+				if(Intersects(mousePoint)) {
+					location = mousePoint.Y;
 					horiz = true;
 				}
 			}
@@ -562,17 +554,17 @@ namespace Guides {
 		/// <summary>
 		/// The Mouse wheel event
 		/// </summary>
-		/// <param name="mouseStruct">Mouse parameters</param>
-		/// <param name="delta">How far to move the guide per click</param>
-		public override void OnMouseWheel(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct, int delta) {
+		/// <param name="mousePoint"></param>
+		/// <param name="mouseData"></param>
+		/// <param name="delta"></param>
+		public override void OnMouseWheel(Point mousePoint, uint mouseData, int delta) {
 			if (lastActive) {
-				if (mouseStruct.mouseData > 7864320)		//This is some internally defined value that I can't find
+				if (mouseData > 7864320)		//This is some internally defined value that I can't find
 					location += delta;
 				else
 					location -= delta;
 			}
 		}
-		public override void OnKeyDown(Keys key) {	}
 	}
 	/// <summary>
 	/// Extension of Guide class to draw circular guides
@@ -611,6 +603,7 @@ namespace Guides {
 			if (anchorScaling) {
 				SolidBrush br = new SolidBrush(Color.Red);
 				g.FillEllipse(br, dragStart.X - 5, dragStart.Y - 5, 10, 10);
+				br.Dispose();
 			}
 			g.DrawEllipse(pen, circRect);
 			pen.Color = Color.Black;
@@ -621,14 +614,14 @@ namespace Guides {
 				g.DrawLine(pen, center.X, center.Y - radius + reticuleLength, center.X, center.Y - radius - reticuleLength);
 				g.DrawLine(pen, center.X - radius + reticuleLength, center.Y, center.X - radius - reticuleLength, center.Y);
 			}
+			pen.Dispose();
 		}
 		/// <summary>
 		/// 
 		/// </summary>
-		/// <param name="mouseStruct"></param>
+		/// <param name="mousePoint">Mouse position</param>
 		/// <returns></returns>
-		public override bool OnMouseMove(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			Point mousePoint = LowLevelnputHook.POINTToPoint(mouseStruct.pt);
+		public override bool OnMouseMove(Point mousePoint) {
 			if (dragging) {
 				center.X = centerHold.X + (mousePoint.X - dragStart.X);
 				center.Y = centerHold.Y + (mousePoint.Y - dragStart.Y);
@@ -653,7 +646,7 @@ namespace Guides {
 			double dy = dragStart.Y - mousePoint.Y;
 			if (dx != 0) {
 				double tmpDist = centerDist + dist;
-				if(!MainForm.alt)
+				if(!Program.alt)
 					scaleAngle = Math.Atan(dy / dx);
 				if (dx < 0) {
 					dx = Math.Cos(scaleAngle) * (centerDist + dist);
@@ -669,10 +662,10 @@ namespace Guides {
 		/// <summary>
 		/// 
 		/// </summary>
-		/// <param name="mouseStruct"></param>
+		/// <param name="mousePoint">Mouse position</param>
 		/// <returns></returns>
-		public override bool OnLeftMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			if (base.OnLeftMouseDown(mouseStruct)) {
+		public override bool OnLeftMouseDown(Point mousePoint) {
+			if(base.OnLeftMouseDown(mousePoint)) {
 				centerHold = center;
 				return true;
 			}
@@ -681,12 +674,11 @@ namespace Guides {
 		/// <summary>
 		/// 
 		/// </summary>
-		/// <param name="mouseStruct"></param>
+		/// <param name="mousePoint">Mouse position</param>
 		/// <returns></returns>
-		public override bool OnRightMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
-			if (base.OnRightMouseDown(mouseStruct)) {
-				if (MainForm.shift) {
-					Point mousePoint = LowLevelnputHook.POINTToPoint(mouseStruct.pt);
+		public override bool OnRightMouseDown(Point mousePoint) {
+			if(base.OnRightMouseDown(mousePoint)) {
+				if(Program.shift) {
 					anchorScaling = true;
 					centerDist = Utility.Distance(center, mousePoint);
 					radHold = radius;
@@ -701,8 +693,8 @@ namespace Guides {
 		/// <summary>
 		/// 
 		/// </summary>
-		/// <param name="mouseStruct"></param>
-		public override void OnRightMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		/// <param name="mousePoint">Mouse position</param>
+		public override void OnRightMouseUp(Point mousePoint) {
 			scaling = false;
 			anchorScaling = false;
 		}
@@ -713,35 +705,35 @@ namespace Guides {
 		/// <returns></returns>
 		public override bool Intersects(Point pt) {
 			double dist = Utility.Distance(center, pt);
-			return dist > (radius - clickMargin) && dist < (radius + clickMargin);
+			return dist > (Math.Abs(radius) - clickMargin) && dist < (Math.Abs(radius) + clickMargin);
 		}
 
 		/// <summary>
 		/// MouseWheel delegate
 		/// </summary>
-		/// <param name="mouseStruct"></param>
+		/// <param name="mousePoint">Mouse position</param>
+		/// <param name="mouseData">Info about whether wheel is rotating up or down</param>
 		/// <param name="delta"></param>
-		public override void OnMouseWheel(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct, int delta) {
+		public override void OnMouseWheel(Point mousePoint, uint mouseData, int delta) {
 			if (lastActive) {
 				wheelScaling = true;
-				if (mouseStruct.mouseData > 7864320)		//This is some internally defined value that I can't find
+				if (mouseData > 7864320)		//This is some internally defined value that I can't find
 					delta = -delta;
 				if (anchorScaling) {
 					scaleDist += delta;
-					AnchorScale(LowLevelnputHook.POINTToPoint(mouseStruct.pt), scaleDist);
+					AnchorScale(mousePoint, scaleDist);
 				} else
 					radius += delta;
 			}
 		}
 		/// <summary>
-		/// 
+		/// Key Down response
 		/// </summary>
-		/// <param name="key"></param>
+		/// <param name="key">What key was pressed</param>
 		public override void OnKeyDown(Keys key) {
 			if (lastActive) {
-				if (MainForm.ctrl && MainForm.alt && key == Keys.R)
+				if(Program.ctrl && Program.alt && key == Keys.R)
 					reticule = !reticule;
-				Console.WriteLine(reticule);
 			}
 		}
 	}

@@ -34,7 +34,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Drawing;
 
-namespace RamGecTools
+namespace InputHook
 {   
     /// <summary>
     /// Class for intercepting low level Windows mouse hooks.
@@ -44,7 +44,7 @@ namespace RamGecTools
         /// <summary>
         /// Internal callback processing function
         /// </summary>
-        private delegate IntPtr MouseHookHandler(int nCode, IntPtr wParam, IntPtr lParam);
+        internal delegate IntPtr MouseHookHandler(int nCode, IntPtr wParam, IntPtr lParam);
         private MouseHookHandler hookHandler;
 		private MouseHookHandler keyHookHandler;
 
@@ -58,7 +58,7 @@ namespace RamGecTools
        /// Function to be called on keyboard input
        /// </summary>
        /// <param name="key">What key was pressed</param>
-        public delegate void KeyBoardHookCallback(Keys key);
+        public delegate void KeyboardHookCallback(Keys key);
 
         #region Events
 #pragma warning disable 1591  
@@ -72,8 +72,8 @@ namespace RamGecTools
         public event MouseHookCallback MiddleButtonDown;
         public event MouseHookCallback MiddleButtonUp;
 
-		public event KeyBoardHookCallback KeyDown;
-		public event KeyBoardHookCallback KeyUp;
+		public event KeyboardHookCallback KeyDown;
+		public event KeyboardHookCallback KeyUp;
 #pragma warning restore 1591
         #endregion
 
@@ -101,13 +101,13 @@ namespace RamGecTools
         {
 			if (keyBoardHookID != IntPtr.Zero) {
 
-				UnhookWindowsHookEx(keyBoardHookID);
+				NativeMethods.UnhookWindowsHookEx(keyBoardHookID);
 				keyBoardHookID = IntPtr.Zero;
 			}
             if (mouseHookID == IntPtr.Zero)
                 return;
 
-            UnhookWindowsHookEx(mouseHookID);
+			NativeMethods.UnhookWindowsHookEx(mouseHookID);
             mouseHookID = IntPtr.Zero;
         }
 
@@ -129,7 +129,7 @@ namespace RamGecTools
         private IntPtr SetHook(MouseHookHandler proc, int handle)
         {   
             using (ProcessModule module = Process.GetCurrentProcess().MainModule)
-                return SetWindowsHookEx(handle, proc, GetModuleHandle(module.ModuleName), 0);
+				return NativeMethods.SetWindowsHookEx(handle, proc, NativeMethods.GetModuleHandle(module.ModuleName), 0);
         }        
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace RamGecTools
         private IntPtr HookFunc(int nCode, IntPtr wParam, IntPtr lParam)
         {
             // parse system messages
-            if (nCode >= 0 && !Guides.MainForm.paused)
+            if (nCode >= 0 && !Guides.Program.paused)
             {
                 if (MouseMessages.WM_LBUTTONDOWN == (MouseMessages)wParam)
                     if (LeftButtonDown != null)
@@ -168,7 +168,7 @@ namespace RamGecTools
                     if (MiddleButtonUp != null)
                         MiddleButtonUp((MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT)));
             }
-            return CallNextHookEx(mouseHookID, nCode, wParam, lParam);
+            return NativeMethods.CallNextHookEx(mouseHookID, nCode, wParam, lParam);
         }
 		private IntPtr KeyBoardHookFunc(int nCode, IntPtr wParam, IntPtr lParam) {
 			// parse system messages
@@ -185,7 +185,7 @@ namespace RamGecTools
 					if (KeyUp != null)
 						KeyUp((Keys)Marshal.ReadInt32(lParam));
 			}
-			return CallNextHookEx(keyBoardHookID, nCode, wParam, lParam);
+			return NativeMethods.CallNextHookEx(keyBoardHookID, nCode, wParam, lParam);
 		}
 		/// <summary>
 		/// Convert a POINT to a Point
@@ -257,25 +257,26 @@ namespace RamGecTools
 			/// </summary>
             public IntPtr dwExtraInfo;
         }
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr SetWindowsHookEx(int idHook,
-            MouseHookHandler lpfn, IntPtr hMod, uint dwThreadId);
+        #endregion
+    }
+	internal static class NativeMethods {
+		[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+		internal static extern IntPtr SetWindowsHookEx(int idHook,
+			LowLevelnputHook.MouseHookHandler lpfn, IntPtr hMod, uint dwThreadId);
 
 		/// <summary>
 		/// Unhook the input hook
 		/// </summary>
 		/// <param name="hhk">The IntPtr to the hook we are unhooking</param>
 		/// <returns></returns>
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool UnhookWindowsHookEx(IntPtr hhk);
+		[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool UnhookWindowsHookEx(IntPtr hhk);
 
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+		[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+		internal static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
 
-        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr GetModuleHandle(string lpModuleName);
-        #endregion
-    }
+		[DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+		internal static extern IntPtr GetModuleHandle(string lpModuleName);
+	}
 }
