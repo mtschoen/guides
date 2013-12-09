@@ -8,7 +8,7 @@ using System;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Guides")]
-[assembly: AssemblyDescription("Visual Guides for windows")]
+[assembly: AssemblyDescription("Visual Guides for Windows")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Sticktoitive Software")]
 [assembly: AssemblyProduct("Guides")]
@@ -34,7 +34,7 @@ using System;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.2.0.0")]
-[assembly: AssemblyFileVersion("1.2.0.0")]
+[assembly: AssemblyVersion("1.3.0.0")]
+[assembly: AssemblyFileVersion("1.3.0.0")]
 [assembly: NeutralResourcesLanguageAttribute("en-US")]
 [assembly: CLSCompliant(false)]

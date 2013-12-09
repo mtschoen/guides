@@ -1,4 +1,4 @@
-Guides v1.2
+Guides v1.3
 ======
 Welcome to Visual Guides for Windows.  This program is designed to provide intractive guide lines over any programs in Windows to help you line things up and generally design better.
 
@@ -34,5 +34,3 @@ Mouse Input
 You can exit the program from the tray icon it creates, or by using the icon on the taskbar.  If the window is focused (either click on the tray icon or click a guide) Alt+F4 will work too :)
 
 Enjoy!
-
-Note: Only works on main monitor for now
