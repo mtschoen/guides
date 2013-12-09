@@ -27,19 +27,19 @@ namespace Guides {
 		/// <summary>
 		/// The Height of the screen
 		/// </summary>
-		public int ScreenHeight;
+		public int ScreenHeight { get; set; }
 		/// <summary>
 		/// The Width of the screen
 		/// </summary>
-		public int ScreenWidth;
+		public int ScreenWidth { get; set; }
 		/// <summary>
 		/// The X position of the screen
 		/// </summary>
-		public int ScreenOffsetX;
+		public int ScreenOffsetX { get; set; }
 		/// <summary>
 		/// The Y position of the screen
 		/// </summary>
-		public int ScreenOffsetY;
+		public int ScreenOffsetY { get; set; }
 
 		Stopwatch updateWatch;
 		int updateSleep = 25;								//Time between invalidates on mouse move.  Lower for smoother animation, higher for better performance
@@ -87,7 +87,7 @@ namespace Guides {
 		/// Mouse Move event
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
-		public void OnMouseMove(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		public void OnMouseMove(MSLLHOOKSTRUCT mouseStruct) {
 			Point offset;
 			if(guides.Count > 0 && updateWatch.ElapsedMilliseconds > updateSleep && ScreenInit(mouseStruct.pt, out offset)) {
 				if(guides.Count > 0) {
@@ -109,7 +109,7 @@ namespace Guides {
 		/// Mouse Down event for Left mouse button
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
-		public void OnLeftMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		public void OnLeftMouseDown(MSLLHOOKSTRUCT mouseStruct) {
 			Point offset;
 			if(ScreenInit(mouseStruct.pt, out offset)) {
 				Guide hit = null;
@@ -120,7 +120,7 @@ namespace Guides {
 					}
 				}
 				if(hit != null) {
-					ClearActiveGuides(hit);
+					ResetAllGuidesActive(hit);
 				}
 				Invalidate();
 			}
@@ -130,7 +130,7 @@ namespace Guides {
 		/// Mouse Up event for Left mouse button
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
-		public void OnLeftMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {	
+		public void OnLeftMouseUp(MSLLHOOKSTRUCT mouseStruct) {	
 			Point offset;
 			if(ScreenInit(mouseStruct.pt, out offset)) {
 				foreach(Guide guide in guides)
@@ -143,7 +143,7 @@ namespace Guides {
 		/// Mouse Down event for Middle mouse button
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
-		public void OnMiddleMousedown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		public void OnMiddleMousedown(MSLLHOOKSTRUCT mouseStruct) {
 			Point offset;
 			if(ScreenInit(mouseStruct.pt, out offset)) {
 				Guide hit = null;
@@ -158,7 +158,7 @@ namespace Guides {
 					Invalidate();
 					return;
 				}
-				ClearActiveGuides();
+				ResetAllGuidesActive();
 				if(Program.ctrl) {
 					guides.Add(new CircleGuide { owner = this, center = offset });
 				} else {
@@ -171,7 +171,7 @@ namespace Guides {
 		/// Mouse Down event for Rigth mosue button
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
-		public void OnRightMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {		
+		public void OnRightMouseDown(MSLLHOOKSTRUCT mouseStruct) {		
 			Point offset;
 			if(ScreenInit(mouseStruct.pt, out offset)) {
 				Guide hit = null;
@@ -182,7 +182,7 @@ namespace Guides {
 					}
 				}
 				if(hit != null) {
-					ClearActiveGuides(hit);
+					ResetAllGuidesActive(hit);
 				}
 				Invalidate();
 			}
@@ -191,7 +191,7 @@ namespace Guides {
 		/// Mouse Up event for Right mouse button
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
-		public void OnRightMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		public void OnRightMouseUp(MSLLHOOKSTRUCT mouseStruct) {
 			Point offset;
 			if(ScreenInit(mouseStruct.pt, out offset)) {
 				foreach(Guide guide in guides)
@@ -203,7 +203,7 @@ namespace Guides {
 		/// Mouse Wheel response
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
-		public void OnMouseWheel(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		public void OnMouseWheel(MSLLHOOKSTRUCT mouseStruct) {
 			Point offset;
 			if(ScreenInit(mouseStruct.pt, out offset)) {
 				if(Program.shift) {
@@ -254,13 +254,17 @@ namespace Guides {
 			Invalidate();
 		}
 		/// <summary>
+		/// Clear the 
+		/// </summary>
+		public void ResetAllGuidesActive() { ResetAllGuidesActive(null); }
+		/// <summary>
 		/// Clears the lastActive state on all guides except the optional parameter.  If no parameter is set, all guides are cleared
 		/// </summary>
 		/// <param name="except">The guide to ignore</param>
-		public void ClearActiveGuides(Guide except = null) {
+		public void ResetAllGuidesActive(Guide except) {
 			foreach (Guide guide in guides)
 				if(guide != except)
-					guide.lastActive = false;
+					guide.active = false;
 		}
 		/// <summary>
 		/// Returns true if mousePoint is within this form's screen.  Also converts global screen coordinates to 
@@ -269,7 +273,7 @@ namespace Guides {
 		/// <param name="mousePoint">Input point for check and conversion</param>
 		/// <param name="point">Converted point in window coordinates</param>
 		/// <returns></returns>
-		public bool ScreenInit(LowLevelnputHook.POINT mousePoint, out Point point) {
+		public bool ScreenInit(LowLevelPoint mousePoint, out Point point) {
 			point = new Point();
 			if(mousePoint.x > ScreenOffsetX && mousePoint.x < ScreenOffsetX + ScreenWidth &&
 				mousePoint.y > ScreenOffsetY && mousePoint.y < ScreenOffsetY + ScreenHeight) {
@@ -287,36 +291,37 @@ namespace Guides {
 		/// <summary>
 		/// How far from an intersection is considered a "hit"
 		/// </summary>
-		public static int clickMargin = 6;
+		public const int clickMargin = 6;
 		/// <summary>
 		/// Whether this guide is being dragged
 		/// </summary>
-		public bool dragging;
+		protected bool dragging { get; set; }
 		/// <summary>
 		/// Whether this was the last active guide (colored cyan)
 		/// </summary>
-		public bool lastActive = true;
+		[DefaultValue(true)]
+		public bool active { get; set; }
 		/// <summary>
 		/// The form that owns this guide
 		/// </summary>
-		public MainForm owner;
+		public MainForm owner { get; set; }
 							
 		/// <summary>
 		/// The point where dragging started
 		/// </summary>
-		protected Point dragStart;
+		protected Point dragStart { get; set; }
 
 		/// <summary>
 		/// Shared pen for drawing
 		/// </summary>
-		protected Pen pen;
+		protected Pen pen { get; set; }
 		/// <summary>
 		/// Draw function for each individual guide
 		/// </summary>
 		/// <param name="g"></param>
 		public virtual void Draw(Graphics g) {
 			pen = new Pen(Color.Red);
-			if (lastActive)
+			if (active)
 				pen = new Pen(Color.Cyan);
 			pen.Width = 2;								//Make it a little wider so you can click it
 		}
@@ -334,7 +339,7 @@ namespace Guides {
 		/// <returns>True if the mouse is over this guide</returns>
 		public virtual bool OnLeftMouseDown(Point mousePoint) {
 			if (Intersects(mousePoint)) {
-				lastActive = dragging = true;
+				active = dragging = true;
 				dragStart = mousePoint;
 				return true;
 			}
@@ -347,7 +352,7 @@ namespace Guides {
 		/// <returns>True if the mouse is over this guide</returns>
 		public virtual bool OnRightMouseDown(Point mousePoint) {
 			if (Intersects(mousePoint)) {
-				lastActive = true;
+				active = true;
 				return true;
 			}
 			return false;
@@ -408,11 +413,12 @@ namespace Guides {
 		/// <summary>
 		/// Whether this guide is horizontal
 		/// </summary>
-		public bool horiz;
+		bool horiz;
 		/// <summary>
 		/// The screen location of this guide (from left if horiz, from top if vert)
 		/// </summary>
-		public int location;
+		[DefaultValue(50)]
+		public int location { get; set; }
 
 		double slope, intercept, interceptHold;
 		Point rotateCenter, a, b;
@@ -558,7 +564,7 @@ namespace Guides {
 		/// <param name="mouseData"></param>
 		/// <param name="delta"></param>
 		public override void OnMouseWheel(Point mousePoint, uint mouseData, int delta) {
-			if (lastActive) {
+			if (active) {
 				if (mouseData > 7864320)		//This is some internally defined value that I can't find
 					location += delta;
 				else
@@ -574,11 +580,13 @@ namespace Guides {
 		/// <summary>
 		/// The center of the circle
 		/// </summary>
-		public Point center, centerHold;
+		public Point center;
+		Point centerHold;
 		/// <summary>
 		/// The radius of the circle
 		/// </summary>
-		public int radius = 50;
+		[DefaultValue(50)]
+		public int radius { get; set; }
 		int reticuleLength = 7;
 		int radHold;
 		double centerDist, scaleDist, scaleAngle;
@@ -587,7 +595,7 @@ namespace Guides {
 		/// <summary>
 		/// Whether to draw reticule lines perpendicular to the horizontal/vertical tangents
 		/// </summary>
-		public bool reticule;
+		public bool reticule { get; set; }
 		Rectangle circRect {
 			get {
 				return new Rectangle(center.X - radius, center.Y - radius, radius + radius, radius + radius);
@@ -715,7 +723,7 @@ namespace Guides {
 		/// <param name="mouseData">Info about whether wheel is rotating up or down</param>
 		/// <param name="delta"></param>
 		public override void OnMouseWheel(Point mousePoint, uint mouseData, int delta) {
-			if (lastActive) {
+			if (active) {
 				wheelScaling = true;
 				if (mouseData > 7864320)		//This is some internally defined value that I can't find
 					delta = -delta;
@@ -731,7 +739,7 @@ namespace Guides {
 		/// </summary>
 		/// <param name="key">What key was pressed</param>
 		public override void OnKeyDown(Keys key) {
-			if (lastActive) {
+			if (active) {
 				if(Program.ctrl && Program.alt && key == Keys.R)
 					reticule = !reticule;
 			}

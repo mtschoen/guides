@@ -48,18 +48,6 @@ namespace InputHook
         private MouseHookHandler hookHandler;
 		private MouseHookHandler keyHookHandler;
 
-        /// <summary>
-        /// Function to be called when defined event occurs
-        /// </summary>
-        /// <param name="mouseStruct">MSLLHOOKSTRUCT mouse structure</param>
-        public delegate void MouseHookCallback(MSLLHOOKSTRUCT mouseStruct);
-
-       /// <summary>
-       /// Function to be called on keyboard input
-       /// </summary>
-       /// <param name="key">What key was pressed</param>
-        public delegate void KeyboardHookCallback(Keys key);
-
         #region Events
 #pragma warning disable 1591  
         public event MouseHookCallback LeftButtonDown;
@@ -126,7 +114,7 @@ namespace InputHook
         /// <param name="proc">Internal callback function</param>
 		/// <param name="handle">Handle for resource (keyboard or mouse?)</param>
         /// <returns>Hook ID</returns>
-        private IntPtr SetHook(MouseHookHandler proc, int handle)
+        private static IntPtr SetHook(MouseHookHandler proc, int handle)
         {   
             using (ProcessModule module = Process.GetCurrentProcess().MainModule)
 				return NativeMethods.SetWindowsHookEx(handle, proc, NativeMethods.GetModuleHandle(module.ModuleName), 0);
@@ -192,7 +180,7 @@ namespace InputHook
 		/// </summary>
 		/// <param name="p">POINT to be converted</param>
 		/// <returns>The POINT in Point form</returns>
-		public static Point POINTToPoint(POINT p) {
+		public static Point POINTToPoint(LowLevelPoint p) {
 			return new Point(p.x, p.y);
 		}
 
@@ -217,48 +205,183 @@ namespace InputHook
 			WM_KEYUP = 0x0101,
 			WM_SYSKEYDOWN = 0x0104
 		}
-
-		/// <summary>
-		/// Ad-hoc Point structure
-		/// </summary>
-        [StructLayout(LayoutKind.Sequential)]
-        public struct POINT {
-
-#pragma warning disable 1591
-			public int x;
-            public int y;
-#pragma warning restore 1591
-        }
-
-		/// <summary>
-		/// Mouse parameters
-		/// </summary>
-        [StructLayout(LayoutKind.Sequential)]
-        public struct MSLLHOOKSTRUCT
-        {
-			/// <summary>
-			/// Mouse position in screen coordinates
-			/// </summary>
-            public POINT pt;
-			/// <summary>
-			/// Extra mouse data (contains mouse wheel ticks)
-			/// </summary>
-            public uint mouseData;
-			/// <summary>
-			/// Mouse flags
-			/// </summary>
-            public uint flags;
-			/// <summary>
-			/// Time of event
-			/// </summary>
-            public uint time;
-			/// <summary>
-			/// Extra info
-			/// </summary>
-            public IntPtr dwExtraInfo;
-        }
         #endregion
     }
+	/// <summary>
+	/// Function to be called when defined event occurs
+	/// </summary>
+	/// <param name="mouseStruct">MSLLHOOKSTRUCT mouse structure</param>
+	public delegate void MouseHookCallback(MSLLHOOKSTRUCT mouseStruct);
+
+	/// <summary>
+	/// Function to be called on keyboard input
+	/// </summary>
+	/// <param name="key">What key was pressed</param>
+	public delegate void KeyboardHookCallback(Keys key);
+	/// <summary>
+	/// Ad-hoc Point structure
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential)]
+	public struct LowLevelPoint {
+
+#pragma warning disable 1591
+		public int x { get; set; }
+		public int y { get; set; }
+#pragma warning restore 1591
+		/// <summary>
+		/// Equals override
+		/// </summary>
+		/// <param name="obj"></param>
+		/// <returns></returns>
+		public override bool Equals(System.Object obj) {
+			// If parameter is null return false.
+			if(obj == null) {
+				return false;
+			}
+#pragma warning disable 168
+			LowLevelPoint p = new LowLevelPoint();
+			try {
+				p = (LowLevelPoint)obj;
+			} catch(InvalidCastException e){ return false; }
+#pragma warning restore 168
+
+			// Return true if the fields match:
+			return (x == p.x) && (y == p.y);
+		}
+
+		/// <summary>
+		/// Equality function
+		/// </summary>
+		/// <param name="p"></param>
+		/// <returns></returns>
+		public bool Equals(LowLevelPoint p) {
+			// If parameter is null return false:
+			if((object)p == null) {
+				return false;
+			}
+
+			// Return true if the fields match:
+			return (x == p.x) && (y == p.y);
+		}
+		/// <summary>
+		/// == Override
+		/// </summary>
+		/// <param name="a"></param>
+		/// <param name="b"></param>
+		/// <returns></returns>
+		public static bool operator ==(LowLevelPoint a, LowLevelPoint b){
+			return (a.x == b.x) && (a.y == b.y);
+		}
+		/// <summary>
+		/// != Override
+		/// </summary>
+		/// <param name="a"></param>
+		/// <param name="b"></param>
+		/// <returns></returns>
+		public static bool operator !=(LowLevelPoint a, LowLevelPoint b) {
+			return !(a == b);
+		}
+
+		/// <summary>
+		/// Returns x ^ y
+		/// </summary>
+		/// <returns></returns>
+		public override int GetHashCode() {
+			return x ^ y;
+		}
+	}
+
+	/// <summary>
+	/// Mouse parameters
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential)]
+	public struct MSLLHOOKSTRUCT {
+		/// <summary>
+		/// Mouse position in screen coordinates
+		/// </summary>
+		public LowLevelPoint pt { get; set; }
+		/// <summary>
+		/// Extra mouse data (contains mouse wheel ticks)
+		/// </summary>
+		public uint mouseData { get; set; }
+		/// <summary>
+		/// Mouse flags
+		/// </summary>
+		public uint flags { get; set; }
+		/// <summary>
+		/// Time of event
+		/// </summary>
+		public uint time { get; set; }
+		/// <summary>
+		/// Extra info
+		/// </summary>
+		public IntPtr dwExtraInfo { get; set; }
+
+		/// <summary>
+		/// Equals override
+		/// </summary>
+		/// <param name="obj"></param>
+		/// <returns></returns>
+		public override bool Equals(System.Object obj) {
+			// If parameter is null return false.
+			if(obj == null) {
+				return false;
+			}
+#pragma warning disable 168 
+			MSLLHOOKSTRUCT p = new MSLLHOOKSTRUCT();
+			try {
+				p = (MSLLHOOKSTRUCT)obj;
+			} catch(InvalidCastException e){ return false;}
+#pragma warning restore 168
+
+			// Return true if the fields match:
+			return Equality(this, p);
+		}
+
+		/// <summary>
+		/// Equality function
+		/// </summary>
+		/// <param name="p"></param>
+		/// <returns></returns>
+		public bool Equals(MSLLHOOKSTRUCT p) {
+			// If parameter is null return false:
+			if((object)p == null) {
+				return false;
+			}
+
+			// Return true if the fields match:
+			return Equality(this, p);
+		}
+		/// <summary>
+		/// == Override
+		/// </summary>
+		/// <param name="a"></param>
+		/// <param name="b"></param>
+		/// <returns></returns>
+		public static bool operator ==(MSLLHOOKSTRUCT a, MSLLHOOKSTRUCT b) {
+			return Equality(a, b);
+		}
+		/// <summary>
+		/// != Override
+		/// </summary>
+		/// <param name="a"></param>
+		/// <param name="b"></param>
+		/// <returns></returns>
+		public static bool operator !=(MSLLHOOKSTRUCT a, MSLLHOOKSTRUCT b) {
+			return !Equality(a, b);
+		}
+		static bool Equality(MSLLHOOKSTRUCT a, MSLLHOOKSTRUCT b) {
+			return (a.pt == b.pt) && (a.mouseData == b.mouseData) && (a.flags == b.flags) && (a.time == b.time) && (a.dwExtraInfo == b.dwExtraInfo);
+		}
+
+		/// <summary>
+		/// Gets Hash Code
+		/// </summary>
+		/// <returns></returns>
+		public override int GetHashCode() {
+			return (int)(pt.GetHashCode() ^ mouseData ^ flags ^ time);
+		}
+	}
 	internal static class NativeMethods {
 		[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
 		internal static extern IntPtr SetWindowsHookEx(int idHook,
@@ -276,7 +399,7 @@ namespace InputHook
 		[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
 		internal static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
 
-		[DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+		[DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
 		internal static extern IntPtr GetModuleHandle(string lpModuleName);
 	}
 }

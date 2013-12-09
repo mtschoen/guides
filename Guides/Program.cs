@@ -72,16 +72,16 @@ namespace Guides {
 			trayIcon.Visible = true;
 
 			inputHook = new LowLevelnputHook();
-			inputHook.MouseMove += new LowLevelnputHook.MouseHookCallback(OnMouseMove);
-			inputHook.LeftButtonDown += new LowLevelnputHook.MouseHookCallback(OnLeftMouseDown);
-			inputHook.LeftButtonUp += new LowLevelnputHook.MouseHookCallback(OnLeftMouseUp);
-			inputHook.RightButtonDown += new LowLevelnputHook.MouseHookCallback(OnRightMouseDown);
-			inputHook.RightButtonUp += new LowLevelnputHook.MouseHookCallback(OnRightMouseUp);
-			inputHook.MiddleButtonDown += new LowLevelnputHook.MouseHookCallback(OnMiddleMousedown);
-			inputHook.MouseWheel += new LowLevelnputHook.MouseHookCallback(OnMouseWheel);
+			inputHook.MouseMove += new MouseHookCallback(OnMouseMove);
+			inputHook.LeftButtonDown += new MouseHookCallback(OnLeftMouseDown);
+			inputHook.LeftButtonUp += new MouseHookCallback(OnLeftMouseUp);
+			inputHook.RightButtonDown += new MouseHookCallback(OnRightMouseDown);
+			inputHook.RightButtonUp += new MouseHookCallback(OnRightMouseUp);
+			inputHook.MiddleButtonDown += new MouseHookCallback(OnMiddleMousedown);
+			inputHook.MouseWheel += new MouseHookCallback(OnMouseWheel);
 
-			inputHook.KeyDown += new LowLevelnputHook.KeyboardHookCallback(OnKeyDown);
-			inputHook.KeyUp += new LowLevelnputHook.KeyboardHookCallback(OnKeyUp);
+			inputHook.KeyDown += new KeyboardHookCallback(OnKeyDown);
+			inputHook.KeyUp += new KeyboardHookCallback(OnKeyUp);
 
 			inputHook.Install();
 
@@ -102,31 +102,31 @@ namespace Guides {
 			}
 			//new MainForm()
 		}
-		private void OnMouseMove(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		private void OnMouseMove(MSLLHOOKSTRUCT mouseStruct) {
 			foreach(MainForm form in windows)
 				form.OnMouseMove(mouseStruct);
 		}
-		private void OnLeftMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		private void OnLeftMouseDown(MSLLHOOKSTRUCT mouseStruct) {
 			foreach(MainForm form in windows)
 				form.OnLeftMouseDown(mouseStruct);
 		}
-		private void OnLeftMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		private void OnLeftMouseUp(MSLLHOOKSTRUCT mouseStruct) {
 			foreach(MainForm form in windows)
 				form.OnLeftMouseUp(mouseStruct);
 		}
-		private void OnMiddleMousedown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		private void OnMiddleMousedown(MSLLHOOKSTRUCT mouseStruct) {
 			foreach(MainForm form in windows)
 				form.OnMiddleMousedown(mouseStruct);
 		}
-		private void OnRightMouseDown(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		private void OnRightMouseDown(MSLLHOOKSTRUCT mouseStruct) {
 			foreach(MainForm form in windows)
 				form.OnRightMouseDown(mouseStruct);
 		}
-		private void OnRightMouseUp(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		private void OnRightMouseUp(MSLLHOOKSTRUCT mouseStruct) {
 			foreach(MainForm form in windows)
 				form.OnRightMouseUp(mouseStruct);
 		}
-		private void OnMouseWheel(LowLevelnputHook.MSLLHOOKSTRUCT mouseStruct) {
+		private void OnMouseWheel(MSLLHOOKSTRUCT mouseStruct) {
 			foreach(MainForm form in windows)
 				form.OnMouseWheel(mouseStruct);
 		}
@@ -209,7 +209,7 @@ namespace Guides {
 			foreach(MainForm form in windows)
 				form.ShowToggle();
 		}
-		private void OnExit() {
+		private static void OnExit() {
 			Application.Exit();
 		}
 		/// <summary>
