@@ -28,12 +28,12 @@ namespace Guides {
 		LowLevelnputHook inputHook;							//Need to have this in a variable to keep it from being garbage collected
 		MainForm[] windows;
 
-		const string pauseText = "Pause Input";
-		const string resumeText = "Resume Input";
-		const string hideText = "Hide Guides";
-		const string showText = "Show Guides";
-		const string clearText = "Clear Guides";
-		const string exitText = "Exit";
+		const string pauseText = "Pause Input (CTRL+ALT+P)";
+		const string resumeText = "Resume Input (CTRL+ALT+P)";
+		const string hideText = "Hide Guides (CTRL+ALT+H)";
+		const string showText = "Show Guides (CTRL+ALT+H)";
+		const string clearText = "Clear Guides (CTRL+ALT+C)";
+		const string exitText = "Exit (CTRL+ALT+Q)";
 		const string AppName = "Guides 1.3";
 
 		private NotifyIcon trayIcon;
