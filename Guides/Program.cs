@@ -10,6 +10,7 @@ using Microsoft.VisualBasic.ApplicationServices;
 using InputHook;
 using System.Drawing;
 using System.Diagnostics;
+using System.Management;
 
 namespace Guides {
 	class Program : WindowsFormsApplicationBase, IDisposable {
@@ -56,7 +57,7 @@ namespace Guides {
 #endif
 			new Program().Run(args);
 		}
-		public Program(){
+		public Program() {
 			trayMenu = new ContextMenu();
 
 			trayMenu.MenuItems.Add(pauseText, MenuCallback);
@@ -88,8 +89,25 @@ namespace Guides {
 			controlWatch = new Stopwatch();
 
 			windows = new MainForm[Screen.AllScreens.Length];
+			//For testing just one screen
+			//windows = new MainForm[1];
 
-			for(int i = 0; i < Screen.AllScreens.Length; i++) {
+			//try {				  
+			//	ManagementObjectSearcher searcher =
+			//		new ManagementObjectSearcher("root\\WMI",
+			//		"SELECT * FROM WmiMonitorBasicDisplayParams");	  
+
+			//	foreach (ManagementObject queryObj in searcher.Get()) {
+			//		Debug.WriteLine("-----------------------------------");
+			//		Debug.WriteLine("WmiMonitorBasicDisplayParams instance");
+			//		Debug.WriteLine("-----------------------------------");
+			//		Debug.WriteLine("Description: {0}", queryObj["SupportedDisplayFeatures"]);
+			//	}
+			//} catch (ManagementException e) {
+			//	MessageBox.Show("An error occurred while querying for WMI data: " + e.Message);
+			//}
+
+			for (int i = 0; i < windows.Length; i++) {
 				windows[i] = new MainForm();
 				if(i == 0) {
 					this.MainForm = windows[i];
@@ -98,6 +116,19 @@ namespace Guides {
 				windows[i].StartPosition = FormStartPosition.Manual;
 				windows[i].Location = screen.WorkingArea.Location;
 				windows[i].Size = new Size(screen.WorkingArea.Width, screen.WorkingArea.Height);
+				Debug.WriteLine(screen.WorkingArea.Width + ", " + screen.WorkingArea.Height);
+
+				
+				uint x, y;
+				screen.GetDpi(DpiType.Angular, out x, out y);
+				Debug.WriteLine(screen.DeviceName + " - dpiX=" + x + ", dpiY=" + y);
+
+				screen.GetDpi(DpiType.Effective, out x, out y);
+				Debug.WriteLine(screen.DeviceName + " - dpiX=" + x + ", dpiY=" + y);
+
+				screen.GetDpi(DpiType.Raw, out x, out y);
+				Debug.WriteLine(screen.DeviceName + " - dpiX=" + x + ", dpiY=" + y);
+
 				windows[i].Show();
 			}
 			//new MainForm()

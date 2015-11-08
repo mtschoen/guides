@@ -11,6 +11,7 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using System.Diagnostics;
 using InputHook;
+using System.Runtime.InteropServices;
 
 namespace Guides {
 
@@ -69,13 +70,14 @@ namespace Guides {
 		/// </summary>
 		/// <param name="e"></param>
 		protected override void OnPaint(PaintEventArgs e) {
+			Debug.WriteLine(GetHashCode());
 			//TODO: Add OSD for things like pause state and current coordinates
 
 			//HACK: Not sure why ctrl gets stuck on.  Here's a bandaid.
 			if(Program.controlWatch.ElapsedMilliseconds > Program.controlResetTime) {
 				Program.controlWatch.Reset();
 				Program.ctrl = false;
-			}
+			}			  
 			base.OnPaint(e);
 			e.Graphics.Clear(BackColor);
 			if (!Program.hidden) {
@@ -144,8 +146,8 @@ namespace Guides {
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnMiddleMousedown(MSLLHOOKSTRUCT mouseStruct) {
-			Point offset;
-			if(ScreenInit(mouseStruct.pt, out offset)) {
+			Point offset;										 
+			if (ScreenInit(mouseStruct.pt, out offset)) {
 				Guide hit = null;
 				foreach(Guide guide in guides) {
 					if(guide.OnLeftMouseDown(offset)) {	//Use left button down to do the same as "select"
@@ -441,7 +443,7 @@ namespace Guides {
 		/// </summary>
 		/// <param name="g">Graphics context from form</param>
 		public override void Draw(Graphics g) {
-			base.Draw(g);
+			base.Draw(g);						  
 			if (showRotated) {
 				SolidBrush br = new SolidBrush(Color.Red);
 				g.FillEllipse(br, rotateCenter.X - 5, rotateCenter.Y - 5, 10, 10);
@@ -780,5 +782,27 @@ namespace Guides {
 			int dy = a.Y - b.Y;
 			return Math.Sqrt(dx * dx + dy * dy);
 		}
+	}
+	public static class ScreenExtensions {
+		public static void GetDpi(this System.Windows.Forms.Screen screen, DpiType dpiType, out uint dpiX, out uint dpiY) {
+			var pnt = new System.Drawing.Point(screen.Bounds.Left + 1, screen.Bounds.Top + 1);
+			var mon = MonitorFromPoint(pnt, 2/*MONITOR_DEFAULTTONEAREST*/);
+			GetDpiForMonitor(mon, dpiType, out dpiX, out dpiY);
+		}
+
+		//https://msdn.microsoft.com/en-us/library/windows/desktop/dd145062(v=vs.85).aspx
+		[DllImport("User32.dll")]
+		private static extern IntPtr MonitorFromPoint([In]System.Drawing.Point pt, [In]uint dwFlags);
+
+		//https://msdn.microsoft.com/en-us/library/windows/desktop/dn280510(v=vs.85).aspx
+		[DllImport("Shcore.dll")]
+		private static extern IntPtr GetDpiForMonitor([In]IntPtr hmonitor, [In]DpiType dpiType, [Out]out uint dpiX, [Out]out uint dpiY);
+	}
+
+	//https://msdn.microsoft.com/en-us/library/windows/desktop/dn280511(v=vs.85).aspx
+	public enum DpiType {
+		Effective = 0,
+		Angular = 1,
+		Raw = 2,
 	}
 }
