@@ -34,7 +34,7 @@ namespace Guides {
 		const string showText = "Show Guides (CTRL+ALT+H)";
 		const string clearText = "Clear Guides (CTRL+ALT+C)";
 		const string exitText = "Exit (CTRL+ALT+Q)";
-		const string AppName = "Guides 1.3";
+		const string AppName = "Guides 1.4";
 
 		private NotifyIcon trayIcon;
 		private ContextMenu trayMenu;
