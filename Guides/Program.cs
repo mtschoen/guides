@@ -88,9 +88,9 @@ namespace Guides {
 
 			controlWatch = new Stopwatch();
 
-			windows = new MainForm[Screen.AllScreens.Length];
+			//windows = new MainForm[Screen.AllScreens.Length];
 			//For testing just one screen
-			//windows = new MainForm[1];
+			windows = new MainForm[1];
 
 			//try {				  
 			//	ManagementObjectSearcher searcher =
@@ -107,6 +107,8 @@ namespace Guides {
 			//	MessageBox.Show("An error occurred while querying for WMI data: " + e.Message);
 			//}
 
+			Resolution.GetResolution();
+
 			for (int i = 0; i < windows.Length; i++) {
 				windows[i] = new MainForm();
 				if(i == 0) {
@@ -115,20 +117,7 @@ namespace Guides {
 				Screen screen = Screen.AllScreens[i];
 				windows[i].StartPosition = FormStartPosition.Manual;
 				windows[i].Location = screen.WorkingArea.Location;
-				windows[i].Size = new Size(screen.WorkingArea.Width, screen.WorkingArea.Height);
-				Debug.WriteLine(screen.WorkingArea.Width + ", " + screen.WorkingArea.Height);
-
-				
-				uint x, y;
-				screen.GetDpi(DpiType.Angular, out x, out y);
-				Debug.WriteLine(screen.DeviceName + " - dpiX=" + x + ", dpiY=" + y);
-
-				screen.GetDpi(DpiType.Effective, out x, out y);
-				Debug.WriteLine(screen.DeviceName + " - dpiX=" + x + ", dpiY=" + y);
-
-				screen.GetDpi(DpiType.Raw, out x, out y);
-				Debug.WriteLine(screen.DeviceName + " - dpiX=" + x + ", dpiY=" + y);
-
+				windows[i].Size = new Size(screen.WorkingArea.Width, screen.WorkingArea.Height);	
 				windows[i].Show();
 			}
 			//new MainForm()
