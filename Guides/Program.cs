@@ -88,9 +88,9 @@ namespace Guides {
 
 			controlWatch = new Stopwatch();
 
-			//windows = new MainForm[Screen.AllScreens.Length];
+			windows = new MainForm[Screen.AllScreens.Length];
 			//For testing just one screen
-			windows = new MainForm[1];
+			//windows = new MainForm[1];
 
 			//try {				  
 			//	ManagementObjectSearcher searcher =
@@ -107,7 +107,7 @@ namespace Guides {
 			//	MessageBox.Show("An error occurred while querying for WMI data: " + e.Message);
 			//}
 
-			Resolution.GetResolution();
+			Dictionary<string, Resolution> resolutions = Resolution.GetResolutions();
 
 			for (int i = 0; i < windows.Length; i++) {
 				windows[i] = new MainForm();
@@ -117,7 +117,24 @@ namespace Guides {
 				Screen screen = Screen.AllScreens[i];
 				windows[i].StartPosition = FormStartPosition.Manual;
 				windows[i].Location = screen.WorkingArea.Location;
-				windows[i].Size = new Size(screen.WorkingArea.Width, screen.WorkingArea.Height);	
+				windows[i].Size = new Size(screen.WorkingArea.Width, screen.WorkingArea.Height);
+
+				windows[i].ScreenHeight = screen.Bounds.Height;
+				windows[i].ScreenWidth = screen.Bounds.Width;
+				windows[i].ScreenOffsetX = screen.Bounds.X;
+				windows[i].ScreenOffsetY = screen.Bounds.Y;		   
+				if (resolutions.ContainsKey(screen.DeviceName)) {
+					windows[i].resolutionScale = (float)resolutions[screen.DeviceName].x / windows[i].Size.Width;
+
+					Debug.WriteLine(screen.DeviceName);
+					Debug.WriteLine(windows[i].ScreenWidth);
+					Debug.WriteLine(windows[i].ScreenHeight);
+					Debug.WriteLine(windows[i].ScreenOffsetX);
+					Debug.WriteLine(windows[i].ScreenOffsetY);
+					Debug.WriteLine(resolutions[screen.DeviceName].x);
+					Debug.WriteLine(resolutions[screen.DeviceName].y);
+
+				}
 				windows[i].Show();
 			}
 			//new MainForm()

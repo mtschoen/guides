@@ -35,7 +35,8 @@ namespace Guides {
 		public int ScreenOffsetY { get; set; }
 
 		Stopwatch updateWatch;
-		int updateSleep = 25;								//Time between invalidates on mouse move.  Lower for smoother animation, higher for better performance
+		int updateSleep = 25;                               //Time between invalidates on mouse move.  Lower for smoother animation, higher for better performance
+		public float resolutionScale = 1;							//Scaling parameter for global DPI scaling
 
 		List<Guide> guides = new List<Guide>();
 
@@ -48,10 +49,10 @@ namespace Guides {
 
 		private void Form1_Load(object sender, EventArgs e) {
 			Screen screen = Screen.FromControl(this);
-			ScreenHeight = screen.Bounds.Height;
-			ScreenWidth = screen.Bounds.Width;
-			ScreenOffsetX = screen.Bounds.X;
-			ScreenOffsetY = screen.Bounds.Y;
+			//ScreenHeight = screen.Bounds.Height;
+			//ScreenWidth = screen.Bounds.Width;
+			//ScreenOffsetX = screen.Bounds.X;
+			//ScreenOffsetY = screen.Bounds.Y;
 
 			updateWatch = new Stopwatch();
 			updateWatch.Start();
@@ -104,7 +105,10 @@ namespace Guides {
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnLeftMouseDown(MSLLHOOKSTRUCT mouseStruct) {
 			Point offset;
-			if(ScreenInit(mouseStruct.pt, out offset)) {
+			//Debug.WriteLine("mousedown");
+			//Debug.WriteLine(mouseStruct.pt.y + ", " + ScreenHeight + " - " + ScreenOffsetY);
+			//Debug.WriteLine(mouseStruct.pt.x + ", " + ScreenWidth + " - " + ScreenOffsetX);
+			if (ScreenInit(mouseStruct.pt, out offset)) {
 				Guide hit = null;
 				foreach(Guide guide in guides) {
 					if(guide.OnLeftMouseDown(offset)) {
@@ -434,7 +438,8 @@ namespace Guides {
 		/// </summary>
 		/// <param name="g">Graphics context from form</param>
 		public override void Draw(Graphics g) {
-			base.Draw(g);						  
+			base.Draw(g);
+			Debug.WriteLine(owner.resolutionScale);
 			if (showRotated) {
 				SolidBrush br = new SolidBrush(Color.Red);
 				g.FillEllipse(br, rotateCenter.X - 5, rotateCenter.Y - 5, 10, 10);

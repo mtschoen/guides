@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Guides {
-	public static class Resolution {
+	public class Resolution {
 		[StructLayout(LayoutKind.Sequential)]
 		public struct DEVMODE {
 			[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
@@ -93,7 +93,11 @@ namespace Guides {
 		[DllImport("user32.dll")]
 		static extern bool EnumDisplayDevices(string lpDevice, uint iDevNum, ref DISPLAY_DEVICE lpDisplayDevice, uint dwFlags);
 
-		public static void GetResolution() {
+		public int x, y;
+
+		public static Dictionary<string, Resolution> GetResolutions() {
+
+			Dictionary<string, Resolution> resolutions = new Dictionary<string, Resolution>();
 
 			DISPLAY_DEVICE dd = new DISPLAY_DEVICE();
 
@@ -107,7 +111,9 @@ namespace Guides {
 				dm.dmFormName = new String(new char[32]);
 				dm.dmSize = (short)Marshal.SizeOf(dm);
 				if (0 != EnumDisplaySettings(dd.DeviceName, ENUM_CURRENT_SETTINGS, ref dm)) {
-					Debug.WriteLine(dm.dmPelsWidth);
+					//We have a monitor, and here's the resolution.
+					//Debug.WriteLine(dd.DeviceName + ", " + dm.dmPelsWidth);
+					resolutions[dd.DeviceName] = new Resolution { x = dm.dmPelsWidth, y = dm.dmPelsHeight };
 				}
 
 				DISPLAY_DEVICE newdd = new DISPLAY_DEVICE();
@@ -117,12 +123,15 @@ namespace Guides {
 					//DumpDevice(newdd);
 					
 					if (0 != EnumDisplaySettings(newdd.DeviceName, ENUM_CURRENT_SETTINGS, ref dm)) {
-						Debug.WriteLine(dm.dmPelsWidth);
+						//Usually don't find monitors here
+						Debug.WriteLine("found a monitor here?");
 					}
 					monitorNum++;
 				}
 				deviceNum++;
 			}
+
+			return resolutions;
 		}
 		public static void DumpDevice(DISPLAY_DEVICE dd) {
 			Debug.WriteLine(dd.DeviceName);
