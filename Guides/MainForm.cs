@@ -77,13 +77,19 @@ namespace Guides {
 					guide.Draw(e.Graphics);
 			}
 		}
+
+		//Stores mouse point from mouse move, since we can't trust the values we get in onmousedown
+		bool onScreen; 
+		Point mousePoint;
 		/// <summary>
 		/// Mouse Move event
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnMouseMove(MSLLHOOKSTRUCT mouseStruct) {
-			Point offset;
-			if(guides.Count > 0 && updateWatch.ElapsedMilliseconds > updateSleep && ScreenInit(mouseStruct.pt, out offset)) {
+			Point offset;	   
+			onScreen = ScreenInit(mouseStruct.pt, out offset);
+            if (guides.Count > 0 && updateWatch.ElapsedMilliseconds > updateSleep && onScreen) {
+				mousePoint = offset;
 				if(guides.Count > 0) {
 					bool hit = false;
 					foreach(Guide guide in guides) {
@@ -104,14 +110,12 @@ namespace Guides {
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnLeftMouseDown(MSLLHOOKSTRUCT mouseStruct) {
-			Point offset;
-			//Debug.WriteLine("mousedown");
-			//Debug.WriteLine(mouseStruct.pt.y + ", " + ScreenHeight + " - " + ScreenOffsetY);
-			//Debug.WriteLine(mouseStruct.pt.x + ", " + ScreenWidth + " - " + ScreenOffsetX);
-			if (ScreenInit(mouseStruct.pt, out offset)) {
+			//Point offset;
+			//if (ScreenInit(mouseStruct.pt, out offset)) {
+			if (onScreen) {
 				Guide hit = null;
 				foreach(Guide guide in guides) {
-					if(guide.OnLeftMouseDown(offset)) {
+					if(guide.OnLeftMouseDown(mousePoint)) {
 						hit = guide;
 						break;
 					}
@@ -127,11 +131,12 @@ namespace Guides {
 		/// Mouse Up event for Left mouse button
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
-		public void OnLeftMouseUp(MSLLHOOKSTRUCT mouseStruct) {	
-			Point offset;
-			if(ScreenInit(mouseStruct.pt, out offset)) {
+		public void OnLeftMouseUp(MSLLHOOKSTRUCT mouseStruct) {
+			//Point offset;
+			//if(ScreenInit(mouseStruct.pt, out offset)) {
+			if (onScreen) { 
 				foreach(Guide guide in guides)
-					guide.OnLeftMouseUp(offset);
+					guide.OnLeftMouseUp(mousePoint);
 				Invalidate();
 			}
 		}
@@ -140,9 +145,14 @@ namespace Guides {
 		/// Mouse Down event for Middle mouse button
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
-		public void OnMiddleMousedown(MSLLHOOKSTRUCT mouseStruct) {
-			Point offset;										 
-			if (ScreenInit(mouseStruct.pt, out offset)) {
+		public void OnMiddleMousedown(MSLLHOOKSTRUCT mouseStruct) {			
+			Point offset = mousePoint;
+			bool localOnScreen = onScreen;
+			if (mousePoint.X == 0 && mousePoint.Y == 0) {
+				localOnScreen = ScreenInit(mouseStruct.pt, out offset);
+            }
+			if (localOnScreen) {
+			//if (onScreen) {
 				Guide hit = null;
 				foreach(Guide guide in guides) {
 					if(guide.OnLeftMouseDown(offset)) {	//Use left button down to do the same as "select"
@@ -168,12 +178,13 @@ namespace Guides {
 		/// Mouse Down event for Rigth mosue button
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
-		public void OnRightMouseDown(MSLLHOOKSTRUCT mouseStruct) {		
-			Point offset;
-			if(ScreenInit(mouseStruct.pt, out offset)) {
+		public void OnRightMouseDown(MSLLHOOKSTRUCT mouseStruct) {
+			//Point offset;
+			//if(ScreenInit(mouseStruct.pt, out offset)) {
+			if (onScreen) {
 				Guide hit = null;
 				foreach(Guide guide in guides) {
-					if(guide.OnRightMouseDown(offset)) {
+					if(guide.OnRightMouseDown(mousePoint)) {
 						hit = guide;
 						break;
 					}
@@ -189,10 +200,11 @@ namespace Guides {
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnRightMouseUp(MSLLHOOKSTRUCT mouseStruct) {
-			Point offset;
-			if(ScreenInit(mouseStruct.pt, out offset)) {
+			//Point offset;
+			//if(ScreenInit(mouseStruct.pt, out offset)) {
+			if (onScreen) {
 				foreach(Guide guide in guides)
-					guide.OnRightMouseUp(offset);
+					guide.OnRightMouseUp(mousePoint);
 				Invalidate();
 			}
 		}
@@ -201,8 +213,9 @@ namespace Guides {
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnMouseWheel(MSLLHOOKSTRUCT mouseStruct) {
-			Point offset;
-			if(ScreenInit(mouseStruct.pt, out offset)) {
+			//Point offset;
+			//if(ScreenInit(mouseStruct.pt, out offset)) {
+			if (onScreen) {
 				if(Program.shift) {
 					int delta = 5;
 					if(Program.ctrl)
@@ -210,7 +223,7 @@ namespace Guides {
 					if(Program.alt)
 						delta = 1;
 					foreach(Guide guide in guides)
-						guide.OnMouseWheel(offset, mouseStruct.mouseData, delta);
+						guide.OnMouseWheel(mousePoint, mouseStruct.mouseData, delta);
 					Invalidate();
 				}
 			}
@@ -283,6 +296,7 @@ namespace Guides {
 			return false;
 		}
 	}
+
 	/// <summary>
 	/// A class to represent individual on-screen guides.  These objects draw themselves and interpret input thorugh a series of callbacks
 	/// </summary>
@@ -342,8 +356,8 @@ namespace Guides {
 		/// </summary>
 		/// <param name="mousePoint">Mouse parameters</param>
 		/// <returns>True if the mouse is over this guide</returns>
-		public virtual bool OnLeftMouseDown(Point mousePoint) {
-			if (Intersects(mousePoint)) {
+		public virtual bool OnLeftMouseDown(Point mousePoint) {	
+			if (Intersects(mousePoint)) {		  
 				active = dragging = true;
 				dragStart = mousePoint;
 				return true;
@@ -438,18 +452,17 @@ namespace Guides {
 		/// </summary>
 		/// <param name="g">Graphics context from form</param>
 		public override void Draw(Graphics g) {
-			base.Draw(g);
-			Debug.WriteLine(owner.resolutionScale);
+			base.Draw(g);								  
 			if (showRotated) {
 				SolidBrush br = new SolidBrush(Color.Red);
-				g.FillEllipse(br, rotateCenter.X - 5, rotateCenter.Y - 5, 10, 10);
+				g.FillEllipse(br, owner.resolutionScale * rotateCenter.X - 5, owner.resolutionScale * rotateCenter.Y - 5, 10, 10);
 				g.DrawLine(pen, a, b);
 				br.Dispose();
 			} else {
 				if (horiz)
-					g.DrawLine(pen, 0, location, owner.ScreenWidth, location);
+					g.DrawLine(pen, 0, owner.resolutionScale * location, owner.resolutionScale * owner.ScreenWidth, owner.resolutionScale * location);
 				else
-					g.DrawLine(pen, location, 0, location, owner.ScreenHeight);
+					g.DrawLine(pen, owner.resolutionScale * location, 0, owner.resolutionScale * location, owner.resolutionScale * owner.ScreenHeight);
 			}
 			pen.Dispose();
 		}
@@ -458,7 +471,7 @@ namespace Guides {
 		/// </summary>
 		/// <param name="mousePoint">Mouse position</param>
 		/// <returns>True if this guide did anything</returns>
-		public override bool OnMouseMove(Point mousePoint) {
+		public override bool OnMouseMove(Point mousePoint) {	 
 			if (dragging) {
 				if (rotated) {
 					intercept = interceptHold + mousePoint.Y - dragStart.Y
@@ -559,6 +572,7 @@ namespace Guides {
 						return true;
 					}
 				} else {
+					//Debug.WriteLine(location + ", " + pt.X + ", " + Math.Abs(location - pt.X));
 					if (Math.Abs(location - pt.X) < clickMargin) {
 						return true;
 					}
@@ -625,17 +639,28 @@ namespace Guides {
 			base.Draw(g);
 			if (anchorScaling) {
 				SolidBrush br = new SolidBrush(Color.Red);
-				g.FillEllipse(br, dragStart.X - 5, dragStart.Y - 5, 10, 10);
+				g.FillEllipse(br, owner.resolutionScale * dragStart.X - 5, owner.resolutionScale * dragStart.Y - 5, 10, 10);
 				br.Dispose();
 			}
-			g.DrawEllipse(pen, circRect);
+			Rectangle localCircRect = new Rectangle();
+			localCircRect.X = (int)(circRect.X * owner.resolutionScale);
+			localCircRect.Y = (int)(circRect.Y * owner.resolutionScale);
+			localCircRect.Width = (int)(circRect.Width * owner.resolutionScale);
+			localCircRect.Height = (int)(circRect.Height * owner.resolutionScale);
+
+			g.DrawEllipse(pen, localCircRect);
 			pen.Color = Color.Black;
 			pen.Width = 1;
 			if (reticule) {
-				g.DrawLine(pen, center.X, center.Y + radius + reticuleLength, center.X, center.Y + radius - reticuleLength);
-				g.DrawLine(pen, center.X + radius + reticuleLength, center.Y, center.X + radius - reticuleLength, center.Y);
-				g.DrawLine(pen, center.X, center.Y - radius + reticuleLength, center.X, center.Y - radius - reticuleLength);
-				g.DrawLine(pen, center.X - radius + reticuleLength, center.Y, center.X - radius - reticuleLength, center.Y);
+
+				Point localCenter = new Point();
+				localCenter.X = (int)(center.X * owner.resolutionScale);
+				localCenter.Y = (int)(center.Y * owner.resolutionScale);
+
+				g.DrawLine(pen, localCenter.X, localCenter.Y + radius + reticuleLength, localCenter.X, localCenter.Y + radius - reticuleLength);
+				g.DrawLine(pen, localCenter.X + radius + reticuleLength, localCenter.Y, localCenter.X + radius - reticuleLength, localCenter.Y);
+				g.DrawLine(pen, localCenter.X, localCenter.Y - radius + reticuleLength, localCenter.X, localCenter.Y - radius - reticuleLength);
+				g.DrawLine(pen, localCenter.X - radius + reticuleLength, localCenter.Y, localCenter.X - radius - reticuleLength, localCenter.Y);
 			}
 			pen.Dispose();
 		}

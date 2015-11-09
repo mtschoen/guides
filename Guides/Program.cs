@@ -124,16 +124,13 @@ namespace Guides {
 				windows[i].ScreenOffsetX = screen.Bounds.X;
 				windows[i].ScreenOffsetY = screen.Bounds.Y;		   
 				if (resolutions.ContainsKey(screen.DeviceName)) {
-					windows[i].resolutionScale = (float)resolutions[screen.DeviceName].x / windows[i].Size.Width;
+					windows[i].resolutionScale = (float)windows[i].Size.Width / resolutions[screen.DeviceName].x;
+					windows[i].ScreenHeight = resolutions[screen.DeviceName].y;
+					windows[i].ScreenWidth = resolutions[screen.DeviceName].x;
 
-					Debug.WriteLine(screen.DeviceName);
-					Debug.WriteLine(windows[i].ScreenWidth);
-					Debug.WriteLine(windows[i].ScreenHeight);
-					Debug.WriteLine(windows[i].ScreenOffsetX);
-					Debug.WriteLine(windows[i].ScreenOffsetY);
-					Debug.WriteLine(resolutions[screen.DeviceName].x);
-					Debug.WriteLine(resolutions[screen.DeviceName].y);
-
+					//NOTE: Sometimes monitors on the "extremes" show themselves as a monitor-width too far... can deal with this if I really need to
+					windows[i].ScreenOffsetX = resolutions[screen.DeviceName].offsetX;
+					windows[i].ScreenOffsetY = resolutions[screen.DeviceName].offsetY;
 				}
 				windows[i].Show();
 			}
