@@ -34,11 +34,15 @@ namespace Guides {
 		const string hideText = "Hide Guides (CTRL+ALT+H)";
 		const string showText = "Show Guides (CTRL+ALT+H)";
 		const string clearText = "Clear Guides (CTRL+ALT+C)";
+		const string blockText = "Block Clicks (CTRL+ALT+B)";
+		const string unblockText = "Unblock Clicks (CTRL+ALT+B)";
 		const string exitText = "Exit (CTRL+ALT+Q)";
 		const string AppName = "Guides 1.4";
 
 		private NotifyIcon trayIcon;
 		private ContextMenu trayMenu;
+
+		bool blockInput;
 
 #if CONSOLE
 		[DllImport("kernel32.dll", SetLastError = true)]
@@ -63,6 +67,7 @@ namespace Guides {
 			trayMenu.MenuItems.Add(pauseText, MenuCallback);
 			trayMenu.MenuItems.Add(hideText, MenuCallback);
 			trayMenu.MenuItems.Add(clearText, MenuCallback);
+			trayMenu.MenuItems.Add(blockText, MenuCallback);
 			trayMenu.MenuItems.Add(exitText, MenuCallback);
 
 			trayIcon = new NotifyIcon();
@@ -92,21 +97,6 @@ namespace Guides {
 			//For testing just one screen
 			//windows = new MainForm[1];
 
-			//try {				  
-			//	ManagementObjectSearcher searcher =
-			//		new ManagementObjectSearcher("root\\WMI",
-			//		"SELECT * FROM WmiMonitorBasicDisplayParams");	  
-
-			//	foreach (ManagementObject queryObj in searcher.Get()) {
-			//		Debug.WriteLine("-----------------------------------");
-			//		Debug.WriteLine("WmiMonitorBasicDisplayParams instance");
-			//		Debug.WriteLine("-----------------------------------");
-			//		Debug.WriteLine("Description: {0}", queryObj["SupportedDisplayFeatures"]);
-			//	}
-			//} catch (ManagementException e) {
-			//	MessageBox.Show("An error occurred while querying for WMI data: " + e.Message);
-			//}
-
 			Dictionary<string, Resolution> resolutions = Resolution.GetResolutions();
 
 			for (int i = 0; i < windows.Length; i++) {
@@ -134,7 +124,6 @@ namespace Guides {
 				}
 				windows[i].Show();
 			}
-			//new MainForm()
 		}
 		private void OnMouseMove(MSLLHOOKSTRUCT mouseStruct) {
 			foreach(MainForm form in windows)
@@ -178,6 +167,9 @@ namespace Guides {
 			if(ctrl && alt && key == Keys.C) {							//CTRL+ALT+C clears guides
 				ClearGuides();
 			}
+			if(ctrl && alt && key == Keys.B) {                          //CTRL+ALT+B blocks clicks
+				ToggleInputBlock();
+			}
 			if(ctrl && alt && key == Keys.P) {							//CTRL+ALT+P pauses
 				PauseToggle();
 			}
@@ -211,6 +203,10 @@ namespace Guides {
 				case hideText:
 					ShowToggle();
 					break;
+				case blockText:
+				case unblockText:
+					ToggleInputBlock();
+					break;
 				case clearText:
 					ClearGuides();
 					break;
@@ -223,6 +219,16 @@ namespace Guides {
 			foreach(MainForm form in windows)
 				form.ClearGuides();
 		}
+
+		void ToggleInputBlock(){
+			blockInput = !blockInput;
+			trayMenu.MenuItems[3].Text = blockInput ? unblockText : blockText;
+
+			foreach (var window in windows){
+				window.blockInput = blockInput;
+			}
+		}
+
 		private void PauseToggle() {
 			paused = !paused;
 			if(paused) {

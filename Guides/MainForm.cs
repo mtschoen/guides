@@ -34,6 +34,8 @@ namespace Guides {
 		/// </summary>
 		public int ScreenOffsetY { get; set; }
 
+		public bool blockInput { get; set; }
+
 		Stopwatch updateWatch;
 		int updateSleep = 25;                               //Time between invalidates on mouse move.  Lower for smoother animation, higher for better performance
 		public float resolutionScale = 1;							//Scaling parameter for global DPI scaling
@@ -69,7 +71,7 @@ namespace Guides {
 			if(Program.controlWatch.ElapsedMilliseconds > Program.controlResetTime) {
 				Program.controlWatch.Reset();
 				Program.ctrl = false;
-			}			  
+			}
 			base.OnPaint(e);
 			e.Graphics.Clear(BackColor);
 			if (!Program.hidden) {
