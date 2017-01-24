@@ -263,6 +263,7 @@ namespace Guides {
 		/// </summary>
 		public void Dispose() {
 			Dispose(true);
+			trayIcon.Dispose();
 			GC.SuppressFinalize(this);
 		}
 	}
