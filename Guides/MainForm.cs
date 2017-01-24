@@ -295,6 +295,9 @@ namespace Guides {
 			}
 			return false;
 		}
+		public new void Dispose() {
+			trayIcon.Dispose();
+		}
 	}
 
 	/// <summary>
