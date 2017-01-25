@@ -19,14 +19,14 @@ namespace Guides {
 	/// </summary>
 	public partial class Overlay {
 		/// <summary>
-		/// The Height of the screen
-		/// </summary>
-		public int ScreenHeight { get; set; }
-
-		/// <summary>
 		/// The Width of the screen
 		/// </summary>
 		public int ScreenWidth { get; set; }
+
+		/// <summary>
+		/// The Height of the screen
+		/// </summary>
+		public int ScreenHeight { get; set; }
 
 		/// <summary>
 		/// The X position of the screen
@@ -38,9 +38,10 @@ namespace Guides {
 		/// </summary>
 		public int ScreenOffsetY { get; set; }
 
+		public double resolutionScale = 1;
+
 		Stopwatch updateWatch;
 		int updateSleep = 25; //Time between invalidates on mouse move.  Lower for smoother animation, higher for better performance
-		public float resolutionScale = 1; //Scaling parameter for global DPI scaling
 
 		//readonly List<Guide> guides = new List<Guide>();
 
@@ -53,8 +54,39 @@ namespace Guides {
 			Topmost = true;
 			Cursor = Cursors.Hand;
 
+			resolutionScale = Width / ScreenWidth;
+
 			updateWatch = new Stopwatch();
 			updateWatch.Start();
+
+			var rect = new Rectangle();
+			rect.Height = Height - 10;
+			rect.Width = Width - 10;
+
+			rect.Stroke = Brushes.LightBlue;
+			rect.StrokeThickness = 5;
+
+			canvas.Children.Add(rect);
+			Canvas.SetTop(rect, 5);
+			Canvas.SetLeft(rect, 5);
+
+			rect = new Rectangle();
+			rect.Height = 10;
+			rect.Width = 10;
+
+			rect.Stroke = Brushes.LightBlue;
+			rect.StrokeThickness = 5;
+
+			canvas.Children.Add(rect);
+			Canvas.SetTop(rect, Height / 2);
+			Canvas.SetLeft(rect, Width / 2);
+
+			var lineGuide = new LineGuide(this, 10);
+
+			lineGuide.Stroke = Brushes.Gray;
+			lineGuide.StrokeThickness = 5;
+
+			canvas.Children.Add(lineGuide);
 		}
 
 		//Stores mouse point from mouse move, since we can't trust the values we get in onmousedown

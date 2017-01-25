@@ -87,7 +87,6 @@ namespace Guides {
 				window.ScreenOffsetX = screen.Bounds.X;
 				window.ScreenOffsetY = screen.Bounds.Y;
 				if (resolutions.ContainsKey(screen.DeviceName)) {
-					window.resolutionScale = (float)window.Width / resolutions[screen.DeviceName].x;
 					window.ScreenHeight = resolutions[screen.DeviceName].y;
 					window.ScreenWidth = resolutions[screen.DeviceName].x;
 
