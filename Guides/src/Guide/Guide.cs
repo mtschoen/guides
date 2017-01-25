@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
-using System.Windows.Input;
+using System.Windows.Forms;
+using System.Windows.Media;
 using System.Windows.Shapes;
 
 namespace Guides {
@@ -21,7 +22,10 @@ namespace Guides {
 		/// <summary>
 		/// Whether this was the last active guide (colored cyan)
 		/// </summary>
-		public bool active { get; set; }
+		public bool active {
+			get { return Equals(Stroke, Brushes.Red); }
+			set { Stroke = value ? Brushes.Red : Brushes.Cyan; }
+		}
 
 		/// <summary>
 		/// The window that owns this guide
@@ -31,30 +35,20 @@ namespace Guides {
 		/// <summary>
 		/// The point where dragging started
 		/// </summary>
-		//protected Point dragStart { get; set; }
+		protected Point dragStart { get; set; }
 
 		/// <summary>
 		/// Shared pen for drawing
 		/// </summary>
 		//protected Pen pen { get; set; }
 
-		public Guide(Overlay owner) {
+		protected Guide(Overlay owner) {
 			if (owner == null)
 				throw new ArgumentNullException();
 			this.owner = owner;
 			active = true;
+			StrokeThickness = 2;
 		}
-
-		/// <summary>
-		/// Draw function for each individual guide
-		/// </summary>
-		/// <param name="g"></param>
-		//public virtual void Draw(Graphics g) {
-		//	pen = new Pen(Color.Red);
-		//	if (active)
-		//		pen = new Pen(Color.Cyan);
-		//	pen.Width = 2; //Make it a little wider so you can click it
-		//}
 
 		/// <summary>
 		/// Respond to mouse motion
@@ -71,7 +65,7 @@ namespace Guides {
 		public virtual bool OnLeftMouseDown(Point mousePoint) {
 			if (Intersects(mousePoint)) {
 				active = dragging = true;
-				//dragStart = mousePoint;
+				dragStart = mousePoint;
 				return true;
 			}
 			return false;
@@ -123,27 +117,8 @@ namespace Guides {
 		/// Key Down Event
 		/// </summary>
 		/// <param name="key">What key is pressed</param>
-		public virtual bool OnKeyDown(Key key) {
+		public virtual bool OnKeyDown(Keys key) {
 			return false;
 		}
-
-		/// <summary>
-		/// Dispose method (disposes pen if exists)
-		/// </summary>
-		/// <param name="disposing"></param>
-		//protected virtual void Dispose(bool disposing) {
-		//	if (disposing) {
-		//		if (pen != null)
-		//			pen.Dispose();
-		//	}
-		//}
-
-		///// <summary>
-		///// Dispose method (disposes pen if exists)
-		///// </summary>
-		//public void Dispose() {
-		//	Dispose(true);
-		//	GC.SuppressFinalize(this);
-		//}
 	}
 }

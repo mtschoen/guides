@@ -1,8 +1,9 @@
 ﻿using System;
-using System.Drawing;
-#if false
-namespace Guides
-{
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+
+namespace Guides {
 	/// <summary>
 	/// An extension of the Guide class that draws a line
 	/// </summary>
@@ -14,36 +15,43 @@ namespace Guides
 		/// <summary>
 		/// The screen location of this guide (from left if horiz, from top if vert)
 		/// </summary>
-		public int location { get; set; }
+		public double location { get; set; }
 
 		double slope, intercept, interceptHold;
 		Point rotateCenter, a, b;
 		bool rotating;
-		bool rotated, showRotated;                      //Showrotated is separated out so that the OnRotateDown doesn't cancel rotation prematurely
+		bool rotated, showRotated; //Showrotated is separated out so that the OnRotateDown doesn't cancel rotation prematurely
 
-		public LineGuide(Overlay owner, int location) : base(owner) {
+		protected override Geometry DefiningGeometry { get { return geometry; } }
+		readonly LineGeometry geometry;
+
+		public LineGuide(Overlay owner, double location) : base(owner) {
 			this.location = location;
+			var top = new Point(0, 0);
+			var bot = new Point(0, owner.Height);
+			geometry = new LineGeometry(top, bot);
+			Canvas.SetLeft(this, location);
 		}
 
 		/// <summary>
 		/// Draws the guide
 		/// </summary>
 		/// <param name="g">Graphics context from form</param>
-		public override void Draw(Graphics g) {
-			base.Draw(g);
-			if(showRotated) {
-				SolidBrush br = new SolidBrush(Color.Red);
-				g.FillEllipse(br, owner.resolutionScale * rotateCenter.X - 5, owner.resolutionScale * rotateCenter.Y - 5, 10, 10);
-				g.DrawLine(pen, a, b);
-				br.Dispose();
-			} else {
-				if(horiz)
-					g.DrawLine(pen, 0, owner.resolutionScale * location, owner.resolutionScale * owner.ScreenWidth, owner.resolutionScale * location);
-				else
-					g.DrawLine(pen, owner.resolutionScale * location, 0, owner.resolutionScale * location, owner.resolutionScale * owner.ScreenHeight);
-			}
-			pen.Dispose();
-		}
+		//public override void Draw(Graphics g) {
+		//	base.Draw(g);
+		//	if(showRotated) {
+		//		SolidBrush br = new SolidBrush(Color.Red);
+		//		g.FillEllipse(br, owner.resolutionScale * rotateCenter.X - 5, owner.resolutionScale * rotateCenter.Y - 5, 10, 10);
+		//		g.DrawLine(pen, a, b);
+		//		br.Dispose();
+		//	} else {
+		//		if(horiz)
+		//			g.DrawLine(pen, 0, owner.resolutionScale * location, owner.resolutionScale * owner.ScreenWidth, owner.resolutionScale * location);
+		//		else
+		//			g.DrawLine(pen, owner.resolutionScale * location, 0, owner.resolutionScale * location, owner.resolutionScale * owner.ScreenHeight);
+		//	}
+		//	pen.Dispose();
+		//}
 		/// <summary>
 		/// Respond to mouse motion
 		/// </summary>
@@ -86,9 +94,9 @@ namespace Guides
 			return false;
 		}
 
-		private void CalcPosition() {
-			a = new Point((int)Math.Round((-intercept / slope)), 0);
-			b = new Point((int)Math.Round(((owner.ScreenHeight - intercept) / slope)), owner.ScreenHeight);
+		void CalcPosition() {
+			a = new Point((int)Math.Round(-intercept / slope), 0);
+			b = new Point((int)Math.Round((owner.Height - intercept) / slope), owner.Height);
 		}
 		/// <summary>
 		/// The Down event for the select button
@@ -158,6 +166,7 @@ namespace Guides
 			}
 			return false;
 		}
+
 		/// <summary>
 		/// The Mouse wheel event
 		/// </summary>
@@ -165,8 +174,8 @@ namespace Guides
 		/// <param name="mouseData"></param>
 		/// <param name="delta"></param>
 		public override void OnMouseWheel(Point mousePoint, uint mouseData, int delta) {
-			if(active) {
-				if(mouseData > 7864320)     //This is some internally defined value that I can't find
+			if (active) {
+				if (mouseData > 7864320) //This is some internally defined value that I can't find
 					location += delta;
 				else
 					location -= delta;
@@ -174,4 +183,3 @@ namespace Guides
 		}
 	}
 }
-#endif

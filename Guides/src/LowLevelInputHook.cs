@@ -32,6 +32,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Drawing;
+using System.Windows.Forms;
 using System.Windows.Input;
 
 namespace InputHook {
@@ -152,14 +153,14 @@ namespace InputHook {
 			// parse system messages
 			if (nCode >= 0) {
 				if (KeyBoardMessages.WM_KEYDOWN == (KeyBoardMessages) wParam)
-					KeyDown?.Invoke((Key) Marshal.ReadInt32(lParam));
+					KeyDown?.Invoke((Keys) Marshal.ReadInt32(lParam));
 
 				//Need to catch SYSKEYDOWN for alt key
 				if (KeyBoardMessages.WM_SYSKEYDOWN == (KeyBoardMessages) wParam)
-					KeyDown?.Invoke((Key) Marshal.ReadInt32(lParam));
+					KeyDown?.Invoke((Keys) Marshal.ReadInt32(lParam));
 
 				if (KeyBoardMessages.WM_KEYUP == (KeyBoardMessages) wParam)
-					KeyUp?.Invoke((Key) Marshal.ReadInt32(lParam));
+					KeyUp?.Invoke((Keys) Marshal.ReadInt32(lParam));
 			}
 
 			return NativeMethods.CallNextHookEx(keyBoardHookID, nCode, wParam, lParam);
@@ -210,7 +211,7 @@ namespace InputHook {
 	/// Function to be called on keyboard input
 	/// </summary>
 	/// <param name="key">What key was pressed</param>
-	public delegate void KeyboardHookCallback(Key key);
+	public delegate void KeyboardHookCallback(Keys key);
 
 	/// <summary>
 	/// Ad-hoc Point structure
