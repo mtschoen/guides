@@ -1,12 +1,12 @@
-﻿<Window x:Class="Guides.MainWindow"
+<Window x:Class="Guides.Overlay"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Guides"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525" Background="#00000000" WindowState="Maximized" WindowStyle="None" AllowsTransparency="True">
-	<Grid>
-
-	</Grid>
+        Title="Overlay" Height="0" Width="0" Background="#00000000" WindowStyle="None" AllowsTransparency="True" Loaded="Window_Loaded">
+    <Grid>
+        <Canvas x:Name="canvas" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" />
+    </Grid>
 </Window>
