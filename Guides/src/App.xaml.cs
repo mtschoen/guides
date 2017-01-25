@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Media;
 
 namespace Guides {
 	/// <summary>
@@ -27,6 +28,8 @@ namespace Guides {
 		const string resumeText = "Resume Input (CTRL+ALT+P)";
 		const string hideText = "Hide Guides (CTRL+ALT+H)";
 		const string showText = "Show Guides (CTRL+ALT+H)";
+		const string blockText = "Block Clicks (CTRL+ALT+B)";
+		const string unblockText = "Unblock Clicks (CTRL+ALT+B)";
 		const string clearText = "Clear Guides (CTRL+ALT+C)";
 		const string exitText = "Exit (CTRL+ALT+Q)";
 		const string AppName = "Guides 1.4";
@@ -41,6 +44,7 @@ namespace Guides {
 
 			trayMenu.MenuItems.Add(pauseText, MenuCallback);
 			trayMenu.MenuItems.Add(hideText, MenuCallback);
+			trayMenu.MenuItems.Add(blockText, MenuCallback);
 			trayMenu.MenuItems.Add(clearText, MenuCallback);
 			trayMenu.MenuItems.Add(exitText, MenuCallback);
 
@@ -174,6 +178,10 @@ namespace Guides {
 				case hideText:
 					ShowToggle();
 					break;
+				case blockText:
+				case unblockText:
+					BlockToggle();
+					break;
 				case clearText:
 					ClearGuides();
 					break;
@@ -205,6 +213,14 @@ namespace Guides {
 				trayMenu.MenuItems[1].Text = hidden ? showText : hideText;
 			//foreach (var form in windows)
 			//	form.ShowToggle();
+		}
+		void BlockToggle() {
+			foreach (var window in windows) {
+				var background = window.Background as SolidColorBrush;
+				//if(background.Color == System.Windows.Media.Color.) {
+				//	background 
+				//}
+			}
 		}
 		static void OnExit() {
 			Current.Shutdown();

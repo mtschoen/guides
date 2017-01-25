@@ -23,8 +23,8 @@ namespace Guides {
 		/// Whether this was the last active guide (colored cyan)
 		/// </summary>
 		public bool active {
-			get { return Equals(Stroke, Brushes.Red); }
-			set { Stroke = value ? Brushes.Red : Brushes.Cyan; }
+			get { return Equals(Stroke, Brushes.Cyan); }
+			set { Stroke = value ? Brushes.Cyan : Brushes.Red; }
 		}
 
 		/// <summary>
@@ -99,7 +99,7 @@ namespace Guides {
 
 		/// <summary>
 		/// The Mouse wheel event
-		/// </summary>													   
+		/// </summary>
 		/// <param name="mousePoint">Where the mouse is</param>
 		/// <param name="mouseData">A number signifying whether the wheel is rotating up or down</param>
 		/// <param name="delta">How far to move the guide per click</param>

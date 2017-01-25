@@ -58,35 +58,6 @@ namespace Guides {
 
 			updateWatch = new Stopwatch();
 			updateWatch.Start();
-
-			var rect = new Rectangle();
-			rect.Height = Height - 10;
-			rect.Width = Width - 10;
-
-			rect.Stroke = Brushes.LightBlue;
-			rect.StrokeThickness = 5;
-
-			canvas.Children.Add(rect);
-			Canvas.SetTop(rect, 5);
-			Canvas.SetLeft(rect, 5);
-
-			rect = new Rectangle();
-			rect.Height = 10;
-			rect.Width = 10;
-
-			rect.Stroke = Brushes.LightBlue;
-			rect.StrokeThickness = 5;
-
-			canvas.Children.Add(rect);
-			Canvas.SetTop(rect, Height / 2);
-			Canvas.SetLeft(rect, Width / 2);
-
-			var lineGuide = new LineGuide(this, 10);
-
-			lineGuide.Stroke = Brushes.Gray;
-			lineGuide.StrokeThickness = 5;
-
-			canvas.Children.Add(lineGuide);
 		}
 
 		//Stores mouse point from mouse move, since we can't trust the values we get in onmousedown
@@ -98,7 +69,7 @@ namespace Guides {
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnMouseMove(MSLLHOOKSTRUCT mouseStruct) {
 			Point offset;
-			onScreen = ScreenInit(mouseStruct.pt, out offset);
+			onScreen = PointInScreen(mouseStruct.pt, out offset);
 
 			if (canvas.Children.Count > 0 && updateWatch.ElapsedMilliseconds > updateSleep && onScreen) {
 				mousePoint = offset;
@@ -166,23 +137,20 @@ namespace Guides {
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnMiddleMousedown(MSLLHOOKSTRUCT mouseStruct) {
-			//Console.WriteLine(Left + ", " + Top + ", " + Width + ", " + Height);
-			//Console.WriteLine(mouseStruct.pt.x + ", " + mouseStruct.pt.y);
-			//return;
-			Point offset = mousePoint;
-			bool localOnScreen = onScreen;
-			if (mousePoint.X == 0 && mousePoint.Y == 0) {
-				localOnScreen = ScreenInit(mouseStruct.pt, out offset);
-			}
-			if (localOnScreen) {
-				//if (onScreen) {
+			//Point offset = mousePoint;
+			//bool localOnScreen = onScreen;
+			//if (mousePoint.X == 0 && mousePoint.Y == 0) {
+			//	localOnScreen = PointInScreen(mouseStruct.pt, out offset);
+			//}
+			//if (localOnScreen) {
+			if (onScreen) {
 				Guide hit = null;
 				foreach (var child in canvas.Children) {
 					var guide = child as Guide;
 					if (guide == null)
 						continue;
 
-					if (guide.OnLeftMouseDown(offset)) { //Use left button down to do the same as "select"
+					if (guide.OnLeftMouseDown(mousePoint)) { //Use left button down to do the same as "select"
 						hit = guide;
 						break;
 					}
@@ -193,12 +161,11 @@ namespace Guides {
 				}
 				ResetAllGuidesActive();
 				if (App.ctrl) {
-					var guide = new CircleGuide(this, offset);
+					var guide = new CircleGuide(this, mousePoint);
 					canvas.Children.Add(guide);
 				} else {
-					var guide = new LineGuide(this, offset.X);
+					var guide = new LineGuide(this, mousePoint.X);
 					canvas.Children.Add(guide);
-					Debug.WriteLine(offset.X);
 				}
 			}
 		}
@@ -330,21 +297,10 @@ namespace Guides {
 		/// <param name="mousePoint">Input point for check and conversion</param>
 		/// <param name="point">Converted point in window coordinates</param>
 		/// <returns></returns>
-		public bool ScreenInit(LowLevelPoint mousePoint, out Point point) {
-			point = new Point();
-			//if (mousePoint.x > Left && mousePoint.x < Left + Width &&
-			//	mousePoint.y > Top && mousePoint.y < Top + Height) {
-			//	point.X = mousePoint.x - Left;
-			//	point.Y = mousePoint.y - Top;
-			//	return true;
-			//}
-			if (mousePoint.x > ScreenOffsetX && mousePoint.x < ScreenOffsetX + ScreenWidth &&
-				mousePoint.y > ScreenOffsetY && mousePoint.y < ScreenOffsetY + ScreenHeight) {
-				point.X = mousePoint.x - ScreenOffsetX;
-				point.Y = mousePoint.y - ScreenOffsetY;
-				return true;
-			}
-			return false;
+		public bool PointInScreen(LowLevelPoint mousePoint, out Point point) {
+			point = new Point(mousePoint.x, mousePoint.y);
+			point = PointFromScreen(point);
+			return point.X >= 0 && point.X < Width && point.Y >= 0 && point.Y < Height;
 		}
 	}
 }

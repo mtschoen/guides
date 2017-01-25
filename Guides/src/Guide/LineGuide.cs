@@ -15,7 +15,16 @@ namespace Guides {
 		/// <summary>
 		/// The screen location of this guide (from left if horiz, from top if vert)
 		/// </summary>
-		public double location { get; set; }
+		public double location { get {
+				return horiz ? Canvas.GetTop(this) : Canvas.GetLeft(this);
+			}
+			set {
+				if (horiz)
+					Canvas.SetTop(this, value);
+				else
+					Canvas.SetLeft(this, value);
+			}
+		}
 
 		double slope, intercept, interceptHold;
 		Point rotateCenter, a, b;
@@ -26,11 +35,10 @@ namespace Guides {
 		readonly LineGeometry geometry;
 
 		public LineGuide(Overlay owner, double location) : base(owner) {
-			this.location = location;
 			var top = new Point(0, 0);
 			var bot = new Point(0, owner.Height);
 			geometry = new LineGeometry(top, bot);
-			Canvas.SetLeft(this, location);
+			this.location = location;
 		}
 
 		/// <summary>
