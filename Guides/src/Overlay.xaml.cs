@@ -1,14 +1,16 @@
-﻿using InputHook;
-using System;
+﻿//#define DEBUG_OVERLAY
+//#define UPDATE_BLOCK
+
+using InputHook;
 using System.Diagnostics;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Media;
-using System.Windows.Shapes;
 using Cursors = System.Windows.Input.Cursors;
 
-namespace Guides {
+namespace Guides{
 	//TODO: Add opacity setting
 	//TODO: Change cursor for horizontal/vertical lines
 	//TODO: Save/load guide sets
@@ -19,31 +21,41 @@ namespace Guides {
 	/// </summary>
 	public partial class Overlay {
 		/// <summary>
+		/// Which screen this is
+		/// </summary>
+		public int screenIndex { get; set; }
+
+		/// <summary>
 		/// The Width of the screen
 		/// </summary>
-		public int ScreenWidth { get; set; }
+		public int screenWidth { get; set; }
 
 		/// <summary>
 		/// The Height of the screen
 		/// </summary>
-		public int ScreenHeight { get; set; }
+		public int screenHeight { get; set; }
 
 		/// <summary>
 		/// The X position of the screen
 		/// </summary>
-		public int ScreenOffsetX { get; set; }
+		public int screenOffsetX { get; set; }
 
 		/// <summary>
 		/// The Y position of the screen
 		/// </summary>
-		public int ScreenOffsetY { get; set; }
+		public int screenOffsetY { get; set; }
 
-		public double resolutionScale = 1;
+		public double ResolutionScaleX = 1;
+		public double ResolutionScaleY = 1;
 
+#if UPDATE_BLOCK
 		Stopwatch updateWatch;
-		int updateSleep = 25; //Time between invalidates on mouse move.  Lower for smoother animation, higher for better performance
+		const int UpdateSleep = 15; //Time between invalidates on mouse move.  Lower for smoother animation, higher for better performance
+#endif
 
-		//readonly List<Guide> guides = new List<Guide>();
+#if DEBUG_OVERLAY
+		LineGuide horiz, vert;
+#endif
 
 		public Overlay() {
 			InitializeComponent();
@@ -54,10 +66,21 @@ namespace Guides {
 			Topmost = true;
 			Cursor = Cursors.Hand;
 
-			resolutionScale = Width / ScreenWidth;
+			ResolutionScaleX = screenWidth / ActualWidth;
+			ResolutionScaleY = screenHeight / ActualHeight;
 
+#if UPDATE_BLOCK
 			updateWatch = new Stopwatch();
 			updateWatch.Start();
+#endif
+
+#if DEBUG_OVERLAY
+			horiz = new LineGuide(this, 0);
+			Canvas.Children.Add(horiz);
+			vert = new LineGuide(this, 0);
+			Canvas.Children.Add(vert);
+			vert.horiz = false;
+#endif
 		}
 
 		//Stores mouse point from mouse move, since we can't trust the values we get in onmousedown
@@ -68,26 +91,27 @@ namespace Guides {
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnMouseMove(MSLLHOOKSTRUCT mouseStruct) {
-			Point offset;
-			onScreen = PointInScreen(mouseStruct.pt, out offset);
+			onScreen = PointInScreen(mouseStruct.pt, out mousePoint);
 
-			if (canvas.Children.Count > 0 && updateWatch.ElapsedMilliseconds > updateSleep && onScreen) {
-				mousePoint = offset;
-				var hit = false;
-				foreach (var child in canvas.Children) {
-					var guide = child as Guide;
-					if (guide == null)
-						continue;
+#if UPDATE_BLOCK
+			if (updateWatch.ElapsedMilliseconds <= UpdateSleep)
+				return;
+#endif
 
-					if (guide.OnMouseMove(offset)) {
-						hit = true;
-						break;
-					}
-				}
-				if (hit) {
-					//Don't invalidate every time or we slow the computer down
-					//Invalidate();
-					updateWatch.Restart();
+			OnMouse(mouseStruct);
+
+			if (!onScreen)
+				return;
+			if (Canvas.Children.Count <= 0)
+				return;
+
+#if UPDATE_BLOCK
+			updateWatch.Restart();
+#endif
+
+			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+				if (guide.OnMouseMove(mousePoint)) {
+					break;
 				}
 			}
 		}
@@ -96,22 +120,14 @@ namespace Guides {
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnLeftMouseDown(MSLLHOOKSTRUCT mouseStruct) {
-			//Point offset;
-			//if (ScreenInit(mouseStruct.pt, out offset)) {
-			if (onScreen) {
-				Guide hit = null;
-				foreach (var child in canvas.Children) {
-					var guide = child as Guide;
-					if (guide == null)
-						continue;
+			OnMouse(mouseStruct);
 
-					if (guide.OnLeftMouseDown(mousePoint)) {
-						hit = guide;
-						break;
-					}
-				}
-				if (hit != null) {
-					ResetAllGuidesActive(hit);
+			if (!onScreen) return;
+
+			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+				if (guide.OnLeftMouseDown(mousePoint)) {
+					ResetAllGuidesActive(guide);
+					break;
 				}
 			}
 		}
@@ -121,14 +137,12 @@ namespace Guides {
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnLeftMouseUp(MSLLHOOKSTRUCT mouseStruct) {
-			//Point offset;
-			//if(ScreenInit(mouseStruct.pt, out offset)) {
-			if (onScreen) {
-				foreach (var child in canvas.Children) {
-					var guide = child as Guide;
+			OnMouse(mouseStruct);
 
-					guide?.OnLeftMouseUp(mousePoint);
-				}
+			if (!onScreen) return;
+
+			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+				guide.OnLeftMouseUp(mousePoint);
 			}
 		}
 
@@ -137,36 +151,25 @@ namespace Guides {
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnMiddleMousedown(MSLLHOOKSTRUCT mouseStruct) {
-			//Point offset = mousePoint;
-			//bool localOnScreen = onScreen;
-			//if (mousePoint.X == 0 && mousePoint.Y == 0) {
-			//	localOnScreen = PointInScreen(mouseStruct.pt, out offset);
-			//}
-			//if (localOnScreen) {
-			if (onScreen) {
-				Guide hit = null;
-				foreach (var child in canvas.Children) {
-					var guide = child as Guide;
-					if (guide == null)
-						continue;
+			OnMouse(mouseStruct);
 
-					if (guide.OnLeftMouseDown(mousePoint)) { //Use left button down to do the same as "select"
-						hit = guide;
-						break;
-					}
-				}
-				if (hit != null) {
-					canvas.Children.Remove(hit);
+			if (!onScreen) return;
+
+			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+				if (guide.OnLeftMouseDown(mousePoint)) {
+					Canvas.Children.Remove(guide);
 					return;
 				}
-				ResetAllGuidesActive();
-				if (App.ctrl) {
-					var guide = new CircleGuide(this, mousePoint);
-					canvas.Children.Add(guide);
-				} else {
-					var guide = new LineGuide(this, mousePoint.X);
-					canvas.Children.Add(guide);
-				}
+			}
+
+			ResetAllGuidesActive();
+
+			if (App.ctrl) {
+				var guide = new CircleGuide(this, mousePoint);
+				Canvas.Children.Add(guide);
+			} else {
+				var guide = new LineGuide(this, mousePoint.Y);
+				Canvas.Children.Add(guide);
 			}
 		}
 		/// <summary>
@@ -174,86 +177,87 @@ namespace Guides {
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnRightMouseDown(MSLLHOOKSTRUCT mouseStruct) {
-			//Point offset;
-			//if(ScreenInit(mouseStruct.pt, out offset)) {
-			if (onScreen) {
-				Guide hit = null;
-				foreach (var child in canvas.Children) {
-					var guide = child as Guide;
-					if (guide == null)
-						continue;
+			OnMouse(mouseStruct);
 
-					if (guide.OnRightMouseDown(mousePoint)) {
-						hit = guide;
-						break;
-					}
+			if (!onScreen) return;
+
+			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+				if (guide.OnRightMouseDown(mousePoint)) {
+					ResetAllGuidesActive(guide);
+					break;
 				}
-				if (hit != null) {
-					ResetAllGuidesActive(hit);
-				}
-				//Invalidate();
 			}
+			//Invalidate();
 		}
 		/// <summary>
 		/// Mouse Up event for Right mouse button
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnRightMouseUp(MSLLHOOKSTRUCT mouseStruct) {
-			//Point offset;
-			//if(ScreenInit(mouseStruct.pt, out offset)) {
-			if (onScreen) {
-				foreach (var child in canvas.Children) {
-					var guide = child as Guide;
-					guide?.OnRightMouseUp(mousePoint);
-				}
-				//Invalidate();
+			OnMouse(mouseStruct);
+
+			if (!onScreen) return;
+
+			foreach (var child in Canvas.Children) {
+				var guide = child as Guide;
+				guide?.OnRightMouseUp(mousePoint);
 			}
+			//Invalidate();
 		}
 		/// <summary>
 		/// Mouse Wheel response
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnMouseWheel(MSLLHOOKSTRUCT mouseStruct) {
-			//Point offset;
-			//if(ScreenInit(mouseStruct.pt, out offset)) {
-			if (onScreen) {
-				if (App.shift) {
-					int delta = 5;
-					if (App.ctrl)
-						delta = 10;
-					if (App.alt)
-						delta = 1;
-					foreach (var child in canvas.Children) {
-						var guide = child as Guide;
-						guide?.OnMouseWheel(mousePoint, mouseStruct.mouseData, delta);
-					}
-					//Invalidate();
-				}
+			OnMouse(mouseStruct);
+
+			if (!onScreen) return;
+			if (!App.shift) return;
+
+			var delta = 5;
+			if (App.ctrl)
+				delta = 10;
+			if (App.alt)
+				delta = 1;
+			foreach (var child in Canvas.Children) {
+				var guide = child as Guide;
+				guide?.OnMouseWheel(mousePoint, mouseStruct.mouseData, delta);
 			}
+			//Invalidate();
 		}
+
+		void OnMouse(MSLLHOOKSTRUCT mouseStruct) {
+#if DEBUG
+#if DEBUG_OVERLAY
+			horiz.location = mousePoint.Y;
+			vert.location = mousePoint.X;
+#endif
+			ScreenIndexLabel.Content = $"Screen {screenIndex}";
+			ScreenSizeLabel.Content = $"Screen size {screenWidth} x {screenHeight}";
+			ScreenOffsetLabel.Content = $"Screen offset {screenOffsetX} x {screenOffsetY}";
+			WindowSizeLabel.Content = $"Window Size {ActualWidth:f1} x {ActualHeight:f1}";
+			ResolutionScaleLabel.Content = $"Resolution Scale {ResolutionScaleX:f6} x {ResolutionScaleY:f6}";
+			RawMouseLabel.Content = $"Raw mouse {mouseStruct.pt.x:f1} x {mouseStruct.pt.y:f1}";
+			ScreenMouseLabel.Content = $"Screen mouse {mousePoint.X:f1} x {mousePoint.Y:f1}";
+			OnScreenLabel.Content = onScreen ? "On Screen" : "Off Screen";
+			OnScreenLabel.Foreground = onScreen ? Brushes.ForestGreen : Brushes.Red;
+#endif
+		}
+
 		/// <summary>
 		/// KeyDown response
 		/// </summary>
 		/// <param name="key">What key is pressed</param>
 		public void OnKeyDown(Keys key) {
-			if (canvas.Children.Count > 0) {
-				bool invalidate = false;
-				foreach (var child in canvas.Children) {
-					var guide = child as Guide;
-					if (guide == null)
-						continue;
-
-					if (guide.OnKeyDown(key))
-						invalidate = true;
-				}
-				//Invalidate();
+			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+				guide.OnKeyDown(key);
 			}
 		}
 		/// <summary>
 		/// Clear the guides array
 		/// </summary>
 		public void ClearGuides() {
-			canvas.Children.Clear();
+			Canvas.Children.Clear();
 			//Invalidate();
 		}
 		/// <summary>
@@ -269,9 +273,12 @@ namespace Guides {
 		/// <summary>
 		/// Called when Show Guides is toggled.  This just calls Invalidate to update drawing
 		/// </summary>
-		//public void ShowToggle() {
-		//	Invalidate();
-		//}
+		public void ShowToggle()
+		{
+			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+				guide.Visibility = guide.Visibility == Visibility.Visible ? Visibility.Hidden : Visibility.Visible;
+			}
+		}
 		/// <summary>
 		/// Clear the 
 		/// </summary>
@@ -281,15 +288,12 @@ namespace Guides {
 		/// </summary>
 		/// <param name="except">The guide to ignore</param>
 		public void ResetAllGuidesActive(Guide except) {
-			foreach (var child in canvas.Children) {
-				var guide = child as Guide;
-				if (guide == null)
-					continue;
-
+			foreach (var guide in Canvas.Children.OfType<Guide>()) {
 				if (!Equals(guide, except))
 					guide.active = false;
 			}
 		}
+
 		/// <summary>
 		/// Returns true if mousePoint is within this form's screen.  Also converts global screen coordinates to 
 		/// window coordinates.  The out parameter point will contain the converted coordinates
@@ -298,9 +302,19 @@ namespace Guides {
 		/// <param name="point">Converted point in window coordinates</param>
 		/// <returns></returns>
 		public bool PointInScreen(LowLevelPoint mousePoint, out Point point) {
-			point = new Point(mousePoint.x, mousePoint.y);
-			point = PointFromScreen(point);
-			return point.X >= 0 && point.X < Width && point.Y >= 0 && point.Y < Height;
+			point = new Point((mousePoint.x - screenOffsetX) / ResolutionScaleX,
+				(mousePoint.y - screenOffsetY) / ResolutionScaleY);
+			var normalized = point.Y / Height;
+			normalized -= 0.5;
+			normalized /= ResolutionScaleY;
+			point.Y -= normalized * Height * 0.005;
+			normalized = point.X / Width;
+			normalized -= 0.5;
+			normalized /= ResolutionScaleX;
+			point.X -= normalized * Width / ResolutionScaleX * 0.005;
+
+			return mousePoint.x >= screenOffsetX && mousePoint.x < screenOffsetX + screenWidth
+				&& mousePoint.y >= screenOffsetY && mousePoint.y < screenOffsetY + screenHeight;
 		}
 	}
 }

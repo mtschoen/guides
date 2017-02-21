@@ -118,7 +118,8 @@ namespace InputHook {
 		/// <returns>Hook ID</returns>
 		private static IntPtr SetHook(MouseHookHandler proc, int handle) {
 			using (ProcessModule module = Process.GetCurrentProcess().MainModule)
-				return NativeMethods.SetWindowsHookEx(handle, proc, NativeMethods.GetModuleHandle(module.ModuleName), 0);
+				//return NativeMethods.SetWindowsHookEx(handle, proc, NativeMethods.GetModuleHandle(module.ModuleName), 0);
+				return NativeMethods.SetWindowsHookEx(handle, proc, IntPtr.Zero, 0);
 		}
 
 		/// <summary>

@@ -11,7 +11,14 @@ namespace Guides {
 		/// <summary>
 		/// Whether this guide is horizontal
 		/// </summary>
-		bool horiz;
+		public bool horiz {
+			get { return geometry.EndPoint.X > 0; }
+			set {
+				geometry.StartPoint = new Point(0, 0);
+				geometry.EndPoint = value ? new Point(owner.Width, 0) : new Point(0, owner.Height);
+				location = location;
+			}
+		}
 		/// <summary>
 		/// The screen location of this guide (from left if horiz, from top if vert)
 		/// </summary>
@@ -19,10 +26,13 @@ namespace Guides {
 				return horiz ? Canvas.GetTop(this) : Canvas.GetLeft(this);
 			}
 			set {
-				if (horiz)
-					Canvas.SetTop(this, value);
-				else
-					Canvas.SetLeft(this, value);
+				if (horiz) {
+					Canvas.SetTop(this, value + StrokeThickness * 0.5f);
+					Canvas.SetLeft(this, 0);
+				} else {
+					Canvas.SetLeft(this, value - StrokeThickness * 0.5f);
+					Canvas.SetTop(this, 0);
+				}
 			}
 		}
 
@@ -31,13 +41,11 @@ namespace Guides {
 		bool rotating;
 		bool rotated, showRotated; //Showrotated is separated out so that the OnRotateDown doesn't cancel rotation prematurely
 
-		protected override Geometry DefiningGeometry { get { return geometry; } }
-		readonly LineGeometry geometry;
+		protected override Geometry DefiningGeometry => geometry;
+		readonly LineGeometry geometry = new LineGeometry();
 
 		public LineGuide(Overlay owner, double location) : base(owner) {
-			var top = new Point(0, 0);
-			var bot = new Point(0, owner.Height);
-			geometry = new LineGeometry(top, bot);
+			horiz = true;
 			this.location = location;
 		}
 
@@ -140,13 +148,13 @@ namespace Guides {
 			showRotated = rotated;
 			if(horiz) {
 				if(Intersects(mousePoint)) {
-					location = mousePoint.X;
 					horiz = false;
+					location = mousePoint.X;
 				}
 			} else {
 				if(Intersects(mousePoint)) {
-					location = mousePoint.Y;
 					horiz = true;
+					location = mousePoint.Y;
 				}
 			}
 		}

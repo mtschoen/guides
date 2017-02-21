@@ -5,6 +5,8 @@ using System.Drawing;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Media;
+using Brush = System.Windows.Media.Brush;
+using Brushes = System.Windows.Media.Brushes;
 
 namespace Guides {
 	/// <summary>
@@ -86,18 +88,30 @@ namespace Guides {
 				window.Width = workingArea.Width;
 				window.Height = workingArea.Height;
 
-				window.ScreenHeight = screen.Bounds.Height;
-				window.ScreenWidth = screen.Bounds.Width;
-				window.ScreenOffsetX = screen.Bounds.X;
-				window.ScreenOffsetY = screen.Bounds.Y;
+				window.screenHeight = screen.Bounds.Height;
+				window.screenWidth = screen.Bounds.Width;
+				window.screenOffsetX = screen.Bounds.X;
+				window.screenOffsetY = screen.Bounds.Y;
 				if (resolutions.ContainsKey(screen.DeviceName)) {
-					window.ScreenHeight = resolutions[screen.DeviceName].y;
-					window.ScreenWidth = resolutions[screen.DeviceName].x;
+					double oldScreenHeight = window.screenHeight;
+					window.screenHeight = resolutions[screen.DeviceName].y;
+					window.ResolutionScaleY = oldScreenHeight / window.screenHeight;
+					double oldScreenWidth = window.screenWidth;
+					window.screenWidth = resolutions[screen.DeviceName].x;
+					window.ResolutionScaleX = oldScreenWidth / window.screenWidth;
 
 					//NOTE: Sometimes monitors on the "extremes" show themselves as a monitor-width too far... can deal with this if I really need to
-					window.ScreenOffsetX = resolutions[screen.DeviceName].offsetX;
-					window.ScreenOffsetY = resolutions[screen.DeviceName].offsetY;
+					window.screenOffsetX = resolutions[screen.DeviceName].offsetX;
+					window.screenOffsetY = resolutions[screen.DeviceName].offsetY;
+
+					window.Top = window.screenOffsetY;
+					window.Left = window.screenOffsetX;
+					window.Height = window.screenHeight;
+					window.Width = window.screenWidth;
 				}
+
+				window.screenIndex = i;
+
 				window.Show();
 				windows.Add(window);
 			}
@@ -148,6 +162,9 @@ namespace Guides {
 			if (ctrl && alt && key == Keys.P) {				//CTRL+ALT+P pauses
 				PauseToggle();
 			}
+			if (ctrl && alt && key == Keys.B) {				//CTRL+ALT+B blocks
+				BlockToggle();
+			}
 			if (ctrl && alt && key == Keys.H) {				//CTRL+ALT+H Show/hides
 				ShowToggle();
 			}
@@ -191,8 +208,8 @@ namespace Guides {
 			}
 		}
 		void ClearGuides() {
-			foreach (var form in windows)
-				form.ClearGuides();
+			foreach (var window in windows)
+				window.ClearGuides();
 		}
 		void PauseToggle() {
 			paused = !paused;
@@ -209,17 +226,21 @@ namespace Guides {
 		void ShowToggle() {
 			hidden = !hidden;
 			paused = hidden;
+
 			if (trayMenu.MenuItems.Count > 0)
 				trayMenu.MenuItems[1].Text = hidden ? showText : hideText;
-			//foreach (var form in windows)
-			//	form.ShowToggle();
+
+			foreach (var window in windows)
+				window.ShowToggle();
 		}
 		void BlockToggle() {
 			foreach (var window in windows) {
 				var background = window.Background as SolidColorBrush;
-				//if(background.Color == System.Windows.Media.Color.) {
-				//	background 
-				//}
+				if (background.Color.A == 0) {
+					window.Background = (Brush) new BrushConverter().ConvertFromString("#01000000");
+				} else {
+					window.Background = Brushes.Transparent;
+				}
 			}
 		}
 		static void OnExit() {

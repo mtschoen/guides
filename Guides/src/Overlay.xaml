@@ -5,8 +5,36 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Guides"
         mc:Ignorable="d"
-        Title="Overlay" Height="0" Width="0" Background="#00000000" WindowStyle="None" AllowsTransparency="True" Loaded="Window_Loaded" ShowInTaskbar="False">
-    <Grid>
-        <Canvas x:Name="canvas" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" />
-    </Grid>
+        Title="Overlay" Height="0" Width="0" Background="#00000000" WindowStyle="None"
+		AllowsTransparency="True" Loaded="Window_Loaded" ShowInTaskbar="False">
+	<Grid>
+		<Canvas x:Name="Canvas" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" />
+		<GroupBox
+			Header="Debug"
+			Background="#7F000000" BorderBrush="Black"
+			Margin="50,250,0,0"
+			Width="222" Height="222"
+			HorizontalAlignment="Left" VerticalAlignment="Top" Foreground="Red">
+			<Grid>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="1*" />
+					<RowDefinition Height="1*" />
+					<RowDefinition Height="1*" />
+					<RowDefinition Height="1*" />
+					<RowDefinition Height="1*" />
+					<RowDefinition Height="1*" />
+					<RowDefinition Height="1*" />
+					<RowDefinition Height="1*" />
+				</Grid.RowDefinitions>
+				<Label Grid.Row="0" x:Name="ScreenIndexLabel" Foreground="#FFA9E973">Screen 1</Label>
+				<Label Grid.Row="1" x:Name="ScreenSizeLabel" Foreground="#FFA9E973">Screen Size 1200 x 3000</Label>
+				<Label Grid.Row="2" x:Name="ScreenOffsetLabel" Foreground="#FFA9E973">Screen Offset 1200, 3000</Label>
+				<Label Grid.Row="3" x:Name="WindowSizeLabel" Foreground="#FF73C9E9">Window size 3000, 3000</Label>
+				<Label Grid.Row="4" x:Name="ResolutionScaleLabel" Foreground="#FF73C9E9">Resolution scale 1.5</Label>
+				<Label Grid.Row="5" x:Name="RawMouseLabel" Foreground="#FF73E9A5">Raw mouse 3000, 3000</Label>
+				<Label Grid.Row="6" x:Name="ScreenMouseLabel" Foreground="#FF73C9E9">Mouse on screen 3000, 3000</Label>
+				<Label Grid.Row="7" x:Name="OnScreenLabel" Foreground="#FF15D142">On Screen</Label>
+			</Grid>
+		</GroupBox>
+	</Grid>
 </Window>
