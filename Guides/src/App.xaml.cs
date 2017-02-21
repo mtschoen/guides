@@ -34,7 +34,7 @@ namespace Guides {
 		const string unblockText = "Unblock Clicks (CTRL+ALT+B)";
 		const string clearText = "Clear Guides (CTRL+ALT+C)";
 		const string exitText = "Exit (CTRL+ALT+Q)";
-		const string AppName = "Guides 1.4";
+		const string AppName = "Guides 2.0";
 
 		NotifyIcon trayIcon;
 		ContextMenu trayMenu;
