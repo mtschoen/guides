@@ -8,7 +8,8 @@ using System.Windows.Media;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
 
-namespace Guides {
+namespace Guides
+{
 	/// <summary>
 	/// Interaction logic for App.xaml
 	/// </summary>
@@ -16,24 +17,24 @@ namespace Guides {
 		/// <summary>
 		/// Whether we are listening to input (listening when false)
 		/// </summary>
-		public static bool paused;
+		public static bool Paused;
 		/// <summary>
 		/// Whether to draw the guides to the screen
 		/// </summary>
-		public static bool hidden;
-		public static bool shift, ctrl, alt;
+		public static bool Hidden;
+		public static bool Shift, Ctrl, Alt;
 
 		LowLevelnputHook inputHook; //Need to have this in a variable to keep it from being garbage collected
 		readonly List<Overlay> windows = new List<Overlay>();
 
-		const string pauseText = "Pause Input (CTRL+ALT+P)";
-		const string resumeText = "Resume Input (CTRL+ALT+P)";
-		const string hideText = "Hide Guides (CTRL+ALT+H)";
-		const string showText = "Show Guides (CTRL+ALT+H)";
-		const string blockText = "Block Clicks (CTRL+ALT+B)";
-		const string unblockText = "Unblock Clicks (CTRL+ALT+B)";
-		const string clearText = "Clear Guides (CTRL+ALT+C)";
-		const string exitText = "Exit (CTRL+ALT+Q)";
+		const string PauseText = "Pause Input (CTRL+ALT+P)";
+		const string ResumeText = "Resume Input (CTRL+ALT+P)";
+		const string HideText = "Hide Guides (CTRL+ALT+H)";
+		const string ShowText = "Show Guides (CTRL+ALT+H)";
+		const string BlockText = "Block Clicks (CTRL+ALT+B)";
+		const string UnblockText = "Unblock Clicks (CTRL+ALT+B)";
+		const string ClearText = "Clear Guides (CTRL+ALT+C)";
+		const string ExitText = "Exit (CTRL+ALT+Q)";
 		const string AppName = "Guides 2.0";
 
 		NotifyIcon trayIcon;
@@ -44,18 +45,18 @@ namespace Guides {
 
 			trayMenu = new ContextMenu();
 
-			trayMenu.MenuItems.Add(pauseText, MenuCallback);
-			trayMenu.MenuItems.Add(hideText, MenuCallback);
-			trayMenu.MenuItems.Add(blockText, MenuCallback);
-			trayMenu.MenuItems.Add(clearText, MenuCallback);
-			trayMenu.MenuItems.Add(exitText, MenuCallback);
+			trayMenu.MenuItems.Add(PauseText, MenuCallback);
+			trayMenu.MenuItems.Add(HideText, MenuCallback);
+			trayMenu.MenuItems.Add(BlockText, MenuCallback);
+			trayMenu.MenuItems.Add(ClearText, MenuCallback);
+			trayMenu.MenuItems.Add(ExitText, MenuCallback);
 
-			trayIcon = new NotifyIcon();
-			trayIcon.Text = AppName;
-			trayIcon.Icon = new Icon(Guides.Properties.Resources.TrayIcon, 40, 40);
-
-			trayIcon.ContextMenu = trayMenu;
-			trayIcon.Visible = true;
+			trayIcon = new NotifyIcon {
+				Text = AppName,
+				Icon = new Icon(Guides.Properties.Resources.TrayIcon, 40, 40),
+				ContextMenu = trayMenu,
+				Visible = true
+			};
 
 			inputHook = new LowLevelnputHook();
 			inputHook.MouseMove += OnMouseMove;
@@ -73,7 +74,7 @@ namespace Guides {
 
 			var resolutions = Resolution.GetResolutions();
 
-			for (int i = 0; i < Screen.AllScreens.Length; i++) {
+			for (var i = 0; i < Screen.AllScreens.Length; i++) {
 				var window = new Overlay();
 				if (i == 0) {
 					MainWindow = window;
@@ -81,37 +82,18 @@ namespace Guides {
 				var screen = Screen.AllScreens[i];
 
 				var workingArea = screen.WorkingArea;
-				window.WindowStartupLocation = WindowStartupLocation.Manual;
 				window.Top = workingArea.Top;
 				window.Left = workingArea.Left;
 
 				window.Width = workingArea.Width;
 				window.Height = workingArea.Height;
 
-				window.screenHeight = screen.Bounds.Height;
-				window.screenWidth = screen.Bounds.Width;
-				window.screenOffsetX = screen.Bounds.X;
-				window.screenOffsetY = screen.Bounds.Y;
 				if (resolutions.ContainsKey(screen.DeviceName)) {
-					double oldScreenHeight = window.screenHeight;
-					window.screenHeight = resolutions[screen.DeviceName].y;
-					window.ResolutionScaleY = oldScreenHeight / window.screenHeight;
-					double oldScreenWidth = window.screenWidth;
-					window.screenWidth = resolutions[screen.DeviceName].x;
-					window.ResolutionScaleX = oldScreenWidth / window.screenWidth;
-
-					//NOTE: Sometimes monitors on the "extremes" show themselves as a monitor-width too far... can deal with this if I really need to
-					window.screenOffsetX = resolutions[screen.DeviceName].offsetX;
-					window.screenOffsetY = resolutions[screen.DeviceName].offsetY;
-
-					window.Top = window.screenOffsetY;
-					window.Left = window.screenOffsetX;
-					window.Height = window.screenHeight;
-					window.Width = window.screenWidth;
+					window.ResolutionScaleY = (double) resolutions[screen.DeviceName].y/screen.Bounds.Height;
+					window.ResolutionScaleX = (double) resolutions[screen.DeviceName].x/screen.Bounds.Width;
 				}
 
 				window.screenIndex = i;
-
 				window.Show();
 				windows.Add(window);
 			}
@@ -147,28 +129,28 @@ namespace Guides {
 		}
 		void OnKeyDown(Keys key) {
 			if (key == Keys.LShiftKey || key == Keys.RShiftKey) {
-				shift = true;
+				Shift = true;
 			}
 			if (key == Keys.LControlKey || key == Keys.RControlKey) {
 				//controlWatch.Start();
-				ctrl = true;
+				Ctrl = true;
 			}
 			if (key == Keys.LMenu || key == Keys.RMenu) {	//Not sure why menu here
-				alt = true;
+				Alt = true;
 			}
-			if (ctrl && alt && key == Keys.C) {				//CTRL+ALT+C clears guides
+			if (Ctrl && Alt && key == Keys.C) {				//CTRL+ALT+C clears guides
 				ClearGuides();
 			}
-			if (ctrl && alt && key == Keys.P) {				//CTRL+ALT+P pauses
+			if (Ctrl && Alt && key == Keys.P) {				//CTRL+ALT+P pauses
 				PauseToggle();
 			}
-			if (ctrl && alt && key == Keys.B) {				//CTRL+ALT+B blocks
+			if (Ctrl && Alt && key == Keys.B) {				//CTRL+ALT+B blocks
 				BlockToggle();
 			}
-			if (ctrl && alt && key == Keys.H) {				//CTRL+ALT+H Show/hides
+			if (Ctrl && Alt && key == Keys.H) {				//CTRL+ALT+H Show/hides
 				ShowToggle();
 			}
-			if (ctrl && alt && key == Keys.Q) {				//CTRL+ALT+Q Quits
+			if (Ctrl && Alt && key == Keys.Q) {				//CTRL+ALT+Q Quits
 				OnExit();
 			}
 			foreach (var form in windows)
@@ -176,33 +158,33 @@ namespace Guides {
 		}
 		void OnKeyUp(Keys key) {
 			if (key == Keys.LShiftKey || key == Keys.RShiftKey) {
-				shift = false;
+				Shift = false;
 			}
 			if (key == Keys.LControlKey || key == Keys.RControlKey) {
-				ctrl = false;
+				Ctrl = false;
 			}
 			if (key == Keys.LMenu || key == Keys.RMenu) {
-				alt = false;
+				Alt = false;
 			}
 		}
 		private void MenuCallback(object sender, EventArgs e) {
 			switch (((MenuItem)sender).Text) {
-				case pauseText:
-				case resumeText:
+				case PauseText:
+				case ResumeText:
 					PauseToggle();
 					break;
-				case showText:
-				case hideText:
+				case ShowText:
+				case HideText:
 					ShowToggle();
 					break;
-				case blockText:
-				case unblockText:
+				case BlockText:
+				case UnblockText:
 					BlockToggle();
 					break;
-				case clearText:
+				case ClearText:
 					ClearGuides();
 					break;
-				case exitText:
+				case ExitText:
 					OnExit();
 					break;
 			}
@@ -212,30 +194,26 @@ namespace Guides {
 				window.ClearGuides();
 		}
 		void PauseToggle() {
-			paused = !paused;
-			if (paused) {
-				trayIcon.Icon = Guides.Properties.Resources.TrayIconPause;
-			} else {
-				trayIcon.Icon = Guides.Properties.Resources.TrayIcon;
-			}
+			Paused = !Paused;
+			trayIcon.Icon = Paused ? Guides.Properties.Resources.TrayIconPause : Guides.Properties.Resources.TrayIcon;
 			if (trayMenu.MenuItems.Count > 0)
-				trayMenu.MenuItems[0].Text = paused ? resumeText : pauseText;
+				trayMenu.MenuItems[0].Text = Paused ? ResumeText : PauseText;
 			//foreach (var form in windows)
 			//	form.PauseToggle();
 		}
 		void ShowToggle() {
-			hidden = !hidden;
-			paused = hidden;
+			Hidden = !Hidden;
+			Paused = Hidden;
 
 			if (trayMenu.MenuItems.Count > 0)
-				trayMenu.MenuItems[1].Text = hidden ? showText : hideText;
+				trayMenu.MenuItems[1].Text = Hidden ? ShowText : HideText;
 
 			foreach (var window in windows)
 				window.ShowToggle();
 		}
 		void BlockToggle() {
 			foreach (var window in windows) {
-				var background = window.Background as SolidColorBrush;
+				var background = (SolidColorBrush)window.Background;
 				if (background.Color.A == 0) {
 					window.Background = (Brush) new BrushConverter().ConvertFromString("#01000000");
 				} else {

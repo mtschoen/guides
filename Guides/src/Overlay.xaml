@@ -8,8 +8,8 @@
         Title="Overlay" Height="0" Width="0" Background="#00000000" WindowStyle="None"
 		AllowsTransparency="True" Loaded="Window_Loaded" ShowInTaskbar="False">
 	<Grid>
-		<Canvas x:Name="Canvas" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" />
-		<GroupBox
+		<Canvas x:Name="Canvas" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top"/>
+		<GroupBox x:Name="DebugBox"
 			Header="Debug"
 			Background="#7F000000" BorderBrush="Black"
 			Margin="50,250,0,0"

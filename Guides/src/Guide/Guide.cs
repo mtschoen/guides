@@ -99,7 +99,7 @@ namespace Guides {
 
 		/// <summary>
 		/// The Mouse wheel event
-		/// </summary>													   
+		/// </summary>
 		/// <param name="mousePoint">Where the mouse is</param>
 		/// <param name="mouseData">A number signifying whether the wheel is rotating up or down</param>
 		/// <param name="delta">How far to move the guide per click</param>

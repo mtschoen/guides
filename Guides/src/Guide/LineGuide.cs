@@ -14,9 +14,10 @@ namespace Guides {
 		public bool horiz {
 			get { return geometry.EndPoint.X > 0; }
 			set {
+				var oldlocation = location;
 				geometry.StartPoint = new Point(0, 0);
 				geometry.EndPoint = value ? new Point(owner.Width, 0) : new Point(0, owner.Height);
-				location = location;
+				location = oldlocation;
 			}
 		}
 		/// <summary>
@@ -37,7 +38,7 @@ namespace Guides {
 		}
 
 		double slope, intercept, interceptHold;
-		Point rotateCenter, a, b;
+		Point rotateCenter;
 		bool rotating;
 		bool rotated, showRotated; //Showrotated is separated out so that the OnRotateDown doesn't cancel rotation prematurely
 
@@ -68,6 +69,7 @@ namespace Guides {
 		//	}
 		//	pen.Dispose();
 		//}
+
 		/// <summary>
 		/// Respond to mouse motion
 		/// </summary>
@@ -76,8 +78,7 @@ namespace Guides {
 		public override bool OnMouseMove(Point mousePoint) {
 			if(dragging) {
 				if(rotated) {
-					intercept = interceptHold + mousePoint.Y - dragStart.Y
-						- (mousePoint.X - dragStart.X) * slope;
+					intercept = interceptHold + mousePoint.Y - dragStart.Y - (mousePoint.X - dragStart.X) * slope;
 					CalcPosition();
 				} else {
 					if(horiz) {
@@ -89,19 +90,9 @@ namespace Guides {
 				return true;
 			}
 			if(rotating) {
+				Canvas.SetTop(this, 0);
+				Canvas.SetLeft(this, 0);
 				showRotated = rotated = true;
-				if(rotateCenter.X == mousePoint.X) {
-					rotated = false;
-					horiz = false;
-					location = mousePoint.X;
-					return true;
-				}
-				if(rotateCenter.Y == mousePoint.Y) {
-					rotated = false;
-					horiz = true;
-					location = mousePoint.Y;
-					return true;
-				}
 				slope = (double)(rotateCenter.Y - mousePoint.Y) / (rotateCenter.X - mousePoint.X);
 				intercept = rotateCenter.Y - (slope * rotateCenter.X);
 				CalcPosition();
@@ -111,8 +102,8 @@ namespace Guides {
 		}
 
 		void CalcPosition() {
-			a = new Point((int)Math.Round(-intercept / slope), 0);
-			b = new Point((int)Math.Round((owner.Height - intercept) / slope), owner.Height);
+			geometry.StartPoint = new Point((int)Math.Round(-intercept / slope), 0);
+			geometry.EndPoint = new Point((int)Math.Round((owner.Height - intercept) / slope), owner.Height);
 		}
 		/// <summary>
 		/// The Down event for the select button
@@ -144,7 +135,11 @@ namespace Guides {
 		/// </summary>
 		/// <param name="mousePoint">Mouse position</param>
 		public override void OnRightMouseUp(Point mousePoint) {
-			rotating = false;
+			if (rotating) {
+				rotating = false;
+				return;
+			}
+
 			showRotated = rotated;
 			if(horiz) {
 				if(Intersects(mousePoint)) {
