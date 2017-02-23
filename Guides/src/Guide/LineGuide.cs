@@ -68,6 +68,7 @@ namespace Guides {
 		//	}
 		//	pen.Dispose();
 		//}
+
 		/// <summary>
 		/// Respond to mouse motion
 		/// </summary>
@@ -76,8 +77,7 @@ namespace Guides {
 		public override bool OnMouseMove(Point mousePoint) {
 			if(dragging) {
 				if(rotated) {
-					intercept = interceptHold + mousePoint.Y - dragStart.Y
-						- (mousePoint.X - dragStart.X) * slope;
+					intercept = interceptHold + mousePoint.Y - dragStart.Y - (mousePoint.X - dragStart.X) * slope;
 					CalcPosition();
 				} else {
 					if(horiz) {

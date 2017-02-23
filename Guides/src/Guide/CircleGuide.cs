@@ -103,7 +103,7 @@ namespace Guides {
 			double dy = dragStart.Y - mousePoint.Y;
 			if (dx != 0) {
 				double tmpDist = centerDist + dist;
-				if (!App.alt)
+				if (!App.Alt)
 					scaleAngle = Math.Atan(dy / dx);
 				if (dx < 0) {
 					dx = Math.Cos(scaleAngle) * (centerDist + dist);
@@ -135,7 +135,7 @@ namespace Guides {
 		/// <returns></returns>
 		public override bool OnRightMouseDown(Point mousePoint) {
 			if (base.OnRightMouseDown(mousePoint)) {
-				if (App.shift) {
+				if (App.Shift) {
 					anchorScaling = true;
 					centerDist = Utility.Distance(center, mousePoint);
 					radHold = radius;
@@ -189,7 +189,7 @@ namespace Guides {
 		/// <param name="key">What key was pressed</param>
 		public override bool OnKeyDown(Keys key) {
 			if (active) {
-				if (App.ctrl && App.alt && key == Keys.R) {
+				if (App.Ctrl && App.Alt && key == Keys.R) {
 					reticule = !reticule;
 					return true;
 				}

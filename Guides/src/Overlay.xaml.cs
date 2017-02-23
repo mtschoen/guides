@@ -2,7 +2,7 @@
 //#define UPDATE_BLOCK
 
 using InputHook;
-using System.Diagnostics;
+using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,7 +10,8 @@ using System.Windows.Forms;
 using System.Windows.Media;
 using Cursors = System.Windows.Input.Cursors;
 
-namespace Guides{
+namespace Guides
+{
 	//TODO: Add opacity setting
 	//TODO: Change cursor for horizontal/vertical lines
 	//TODO: Save/load guide sets
@@ -25,26 +26,6 @@ namespace Guides{
 		/// </summary>
 		public int screenIndex { get; set; }
 
-		/// <summary>
-		/// The Width of the screen
-		/// </summary>
-		public int screenWidth { get; set; }
-
-		/// <summary>
-		/// The Height of the screen
-		/// </summary>
-		public int screenHeight { get; set; }
-
-		/// <summary>
-		/// The X position of the screen
-		/// </summary>
-		public int screenOffsetX { get; set; }
-
-		/// <summary>
-		/// The Y position of the screen
-		/// </summary>
-		public int screenOffsetY { get; set; }
-
 		public double ResolutionScaleX = 1;
 		public double ResolutionScaleY = 1;
 
@@ -57,24 +38,36 @@ namespace Guides{
 		LineGuide horiz, vert;
 #endif
 
+#if DEBUG
+		public Brush screenColor;
+#endif
+
 		public Overlay() {
 			InitializeComponent();
 		}
 
 		void Window_Loaded(object sender, RoutedEventArgs e) {
-			WindowState = WindowState.Maximized;
 			Topmost = true;
 			Cursor = Cursors.Hand;
-
-			ResolutionScaleX = screenWidth / ActualWidth;
-			ResolutionScaleY = screenHeight / ActualHeight;
 
 #if UPDATE_BLOCK
 			updateWatch = new Stopwatch();
 			updateWatch.Start();
 #endif
 
+#if DEBUG
+			screenColor = PickRandomBrush(new Random());
+#endif
+
 #if DEBUG_OVERLAY
+			Canvas.Children.Add(new Rectangle()
+			{
+				StrokeThickness = 5,
+				Stroke = screenColor,
+				Height = Height,
+				Width = Width
+			});
+
 			horiz = new LineGuide(this, 0);
 			Canvas.Children.Add(horiz);
 			vert = new LineGuide(this, 0);
@@ -82,6 +75,18 @@ namespace Guides{
 			vert.horiz = false;
 #endif
 		}
+
+#if DEBUG
+		private Brush PickRandomBrush(Random rnd)
+		{
+			var result = Brushes.Transparent;
+			var brushesType = typeof(Brushes);
+			var properties = brushesType.GetProperties();
+			var random = rnd.Next(properties.Length);
+			result = (SolidColorBrush)properties[random].GetValue(null, null);
+			return result;
+		}
+#endif
 
 		//Stores mouse point from mouse move, since we can't trust the values we get in onmousedown
 		bool onScreen;
@@ -164,7 +169,7 @@ namespace Guides{
 
 			ResetAllGuidesActive();
 
-			if (App.ctrl) {
+			if (App.Ctrl) {
 				var guide = new CircleGuide(this, mousePoint);
 				Canvas.Children.Add(guide);
 			} else {
@@ -187,7 +192,6 @@ namespace Guides{
 					break;
 				}
 			}
-			//Invalidate();
 		}
 		/// <summary>
 		/// Mouse Up event for Right mouse button
@@ -202,7 +206,6 @@ namespace Guides{
 				var guide = child as Guide;
 				guide?.OnRightMouseUp(mousePoint);
 			}
-			//Invalidate();
 		}
 		/// <summary>
 		/// Mouse Wheel response
@@ -212,18 +215,17 @@ namespace Guides{
 			OnMouse(mouseStruct);
 
 			if (!onScreen) return;
-			if (!App.shift) return;
+			if (!App.Shift) return;
 
 			var delta = 5;
-			if (App.ctrl)
+			if (App.Ctrl)
 				delta = 10;
-			if (App.alt)
+			if (App.Alt)
 				delta = 1;
 			foreach (var child in Canvas.Children) {
 				var guide = child as Guide;
 				guide?.OnMouseWheel(mousePoint, mouseStruct.mouseData, delta);
 			}
-			//Invalidate();
 		}
 
 		void OnMouse(MSLLHOOKSTRUCT mouseStruct) {
@@ -233,9 +235,10 @@ namespace Guides{
 			vert.location = mousePoint.X;
 #endif
 			ScreenIndexLabel.Content = $"Screen {screenIndex}";
-			ScreenSizeLabel.Content = $"Screen size {screenWidth} x {screenHeight}";
-			ScreenOffsetLabel.Content = $"Screen offset {screenOffsetX} x {screenOffsetY}";
-			WindowSizeLabel.Content = $"Window Size {ActualWidth:f1} x {ActualHeight:f1}";
+			ScreenIndexLabel.Foreground = screenColor;
+			ScreenSizeLabel.Content = $"Screen size {Width} x {Height}";
+			ScreenOffsetLabel.Content = $"Screen offset {Left} x {Top}";
+			WindowSizeLabel.Content = $"Window Size {Canvas.Width:f1} x {Canvas.Height:f1}";
 			ResolutionScaleLabel.Content = $"Resolution Scale {ResolutionScaleX:f6} x {ResolutionScaleY:f6}";
 			RawMouseLabel.Content = $"Raw mouse {mouseStruct.pt.x:f1} x {mouseStruct.pt.y:f1}";
 			ScreenMouseLabel.Content = $"Screen mouse {mousePoint.X:f1} x {mousePoint.Y:f1}";
@@ -294,7 +297,7 @@ namespace Guides{
 			}
 		}
 
-		/// <summary>
+		/// <summary>6
 		/// Returns true if mousePoint is within this form's screen.  Also converts global screen coordinates to 
 		/// window coordinates.  The out parameter point will contain the converted coordinates
 		/// </summary>
@@ -302,19 +305,10 @@ namespace Guides{
 		/// <param name="point">Converted point in window coordinates</param>
 		/// <returns></returns>
 		public bool PointInScreen(LowLevelPoint mousePoint, out Point point) {
-			point = new Point((mousePoint.x - screenOffsetX) / ResolutionScaleX,
-				(mousePoint.y - screenOffsetY) / ResolutionScaleY);
-			var normalized = point.Y / Height;
-			normalized -= 0.5;
-			normalized /= ResolutionScaleY;
-			point.Y -= normalized * Height * 0.005;
-			normalized = point.X / Width;
-			normalized -= 0.5;
-			normalized /= ResolutionScaleX;
-			point.X -= normalized * Width / ResolutionScaleX * 0.005;
+			point = new Point(mousePoint.x / ResolutionScaleX - Left, mousePoint.y / ResolutionScaleY - Top);
 
-			return mousePoint.x >= screenOffsetX && mousePoint.x < screenOffsetX + screenWidth
-				&& mousePoint.y >= screenOffsetY && mousePoint.y < screenOffsetY + screenHeight;
+			return mousePoint.x >= Left && mousePoint.x < Left + Width
+				&& mousePoint.y >= Top && mousePoint.y < Top + Height;
 		}
 	}
 }
