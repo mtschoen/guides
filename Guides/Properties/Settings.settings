@@ -2,11 +2,11 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Guides.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="ActiveColor" Type="System.String" Scope="User">
-      <Value Profile="(Default)">#00FFFFFF</Value>
+    <Setting Name="ActiveBrush" Type="System.Windows.Media.SolidColorBrush" Scope="User">
+      <Value Profile="(Default)">#FF00FFFF</Value>
     </Setting>
-    <Setting Name="InactiveColor" Type="System.String" Scope="User">
-      <Value Profile="(Default)">#FF0000Ff</Value>
+    <Setting Name="InactiveBrush" Type="System.Windows.Media.SolidColorBrush" Scope="User">
+      <Value Profile="(Default)">#FFFF0000</Value>
     </Setting>
   </Settings>
 </SettingsFile>

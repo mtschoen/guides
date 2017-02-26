@@ -163,7 +163,7 @@ namespace Guides {
 		/// <returns></returns>
 		public override bool Intersects(Point pt) {
 			double dist = Utility.Distance(center, pt);
-			return dist > (Math.Abs(radius) - clickMargin) && dist < (Math.Abs(radius) + clickMargin);
+			return dist > (Math.Abs(radius) - ClickMargin) && dist < (Math.Abs(radius) + ClickMargin);
 		}
 
 		/// <summary>

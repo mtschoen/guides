@@ -25,25 +25,25 @@ namespace Guides.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("#00FFFFFF")]
-        public string ActiveColor {
+        [global::System.Configuration.DefaultSettingValueAttribute("#FF00FFFF")]
+        public global::System.Windows.Media.SolidColorBrush ActiveBrush {
             get {
-                return ((string)(this["ActiveColor"]));
+                return ((global::System.Windows.Media.SolidColorBrush)(this["ActiveBrush"]));
             }
             set {
-                this["ActiveColor"] = value;
+                this["ActiveBrush"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("#FF0000Ff")]
-        public string InactiveColor {
+        [global::System.Configuration.DefaultSettingValueAttribute("#FFFF0000")]
+        public global::System.Windows.Media.SolidColorBrush InactiveBrush {
             get {
-                return ((string)(this["InactiveColor"]));
+                return ((global::System.Windows.Media.SolidColorBrush)(this["InactiveBrush"]));
             }
             set {
-                this["InactiveColor"] = value;
+                this["InactiveBrush"] = value;
             }
         }
     }

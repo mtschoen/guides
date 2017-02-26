@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Forms;
-using System.Windows.Media;
 using System.Windows.Shapes;
 
 namespace Guides {
@@ -14,7 +13,7 @@ namespace Guides {
 		/// <summary>
 		/// How far from an intersection is considered a "hit"
 		/// </summary>
-		public const int clickMargin = 6;
+		public const int ClickMargin = 6;
 
 		/// <summary>
 		/// Whether this guide is being dragged
@@ -25,8 +24,8 @@ namespace Guides {
 		/// Whether this was the last active guide (colored cyan)
 		/// </summary>
 		public bool active {
-			get { return Equals(Stroke, Brushes.Cyan); }
-			set { Stroke = value ? Brushes.Cyan : Brushes.Red; }
+			get { return Equals(Stroke, Colors.ActiveBrush); }
+			set { Stroke = value ? Colors.ActiveBrush : Colors.InactiveBrush; }
 		}
 
 		/// <summary>

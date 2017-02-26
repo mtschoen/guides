@@ -210,18 +210,18 @@ namespace Guides {
 		public override bool Intersects(Point pt) {
 			if(rotated) {
 				//Debug.WriteLine($"rotated {pt.Y} - {pt.X} * {slope} + {intercept})) {Math.Abs(pt.Y - Math.Abs(pt.X * slope + intercept))}");
-				if (Math.Abs(pt.Y - Math.Abs(pt.X * slope + intercept)) < clickMargin) {
+				if (Math.Abs(pt.Y - Math.Abs(pt.X * slope + intercept)) < ClickMargin) {
 					return true;
 				}
 			} else {
 				if(horiz) {
 					//Debug.WriteLine(location + ", " + pt.Y + ", " + Math.Abs(location - pt.Y));
-					if (Math.Abs(location - pt.Y) < clickMargin) {
+					if (Math.Abs(location - pt.Y) < ClickMargin) {
 						return true;
 					}
 				} else {
 					//Debug.WriteLine(location + ", " + pt.X + ", " + Math.Abs(location - pt.X));
-					if (Math.Abs(location - pt.X) < clickMargin) {
+					if (Math.Abs(location - pt.X) < ClickMargin) {
 						return true;
 					}
 				}

@@ -187,7 +187,7 @@ namespace Guides
 					ClearGuides();
 					break;
 				case ColorsText:
-					new Colors();
+					new Colors().Show();
 					break;
 				case ExitText:
 					OnExit();

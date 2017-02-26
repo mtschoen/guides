@@ -1,40 +1,44 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
-namespace Guides.src
+namespace Guides
 {
 	/// <summary>
 	/// Interaction logic for ColorPicker.xaml
 	/// </summary>
-	public partial class ColorPicker : UserControl
-	{
+	public partial class ColorPicker : UserControl {
+		readonly Dictionary<Color, ComboBoxItem> items = new Dictionary<Color, ComboBoxItem>();
+
+		public event Action<SolidColorBrush> OnSelectionChanged;
+
 		public ColorPicker() {
 			InitializeComponent();
 
-			var brushesType = typeof(Brushes);
-
-			// Get all static properties
-			var properties = brushesType.GetProperties(BindingFlags.Static | BindingFlags.Public);
-			//var bc = new BrushConverter();
-
+			var properties = typeof(Brushes).GetProperties(BindingFlags.Static | BindingFlags.Public);
 			foreach (var prop in properties) {
 				var brush = (SolidColorBrush) prop.GetValue(null, null);
 
-				ComboBox.Items.Add(brush);
+				var item = new ComboBoxItem
+				{
+					Background = brush,
+					Content = brush.Color.ToString()
+				};
+				items[brush.Color] = item;
+				ComboBox.Items.Add(item);
 			}
+		}
+
+		public void SetValue(SolidColorBrush brush) {
+			ComboBox.SelectedItem = items[brush.Color];
+		}
+
+		void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+			var brush = ((ComboBoxItem) ComboBox.SelectedItem).Background;
+			ComboBox.Foreground = brush;
+			OnSelectionChanged?.Invoke((SolidColorBrush)brush);
 		}
 	}
 }

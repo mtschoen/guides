@@ -3,10 +3,19 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Guides.src"
+        xmlns:local="clr-namespace:Guides"
         mc:Ignorable="d"
-        Title="Colors" Height="300" Width="300">
-    <Grid>
-        <local:ColorPicker Margin="0,0,0.333,239.667"></local:ColorPicker>
-    </Grid>
+        Title="Colors" Height="140" Width="200" MinHeight="140" MinWidth="200" Initialized="Window_Initialized">
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="25"></RowDefinition>
+			<RowDefinition Height="25"></RowDefinition>
+			<RowDefinition Height="25"></RowDefinition>
+			<RowDefinition Height="25"></RowDefinition>
+		</Grid.RowDefinitions>
+		<Label Grid.Row="0">Active Guide Color</Label>
+		<local:ColorPicker Grid.Row="1" x:Name="ActiveColorPicker"/>
+		<Label Grid.Row="2">Inactive Guide Color</Label>
+		<local:ColorPicker Grid.Row="3" x:Name="InactiveColorPicker"/>
+	</Grid>
 </Window>
