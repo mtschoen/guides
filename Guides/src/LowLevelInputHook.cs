@@ -29,26 +29,24 @@
 //Updates made by Matt Schoen on 11/16/2013 to add keyboard hook
 
 using System;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using System.Windows.Input;
 
 namespace InputHook {
 	/// <summary>
 	/// Class for intercepting low level Windows mouse hooks.
 	/// </summary>
 	public class LowLevelnputHook {
-		public static bool enabled = true;
+		public static bool Enabled = true;
 
 		/// <summary>
 		/// Internal callback processing function
 		/// </summary>
 		internal delegate IntPtr MouseHookHandler(int nCode, IntPtr wParam, IntPtr lParam);
 
-		private MouseHookHandler hookHandler;
-		private MouseHookHandler keyHookHandler;
+		MouseHookHandler hookHandler;
+		MouseHookHandler keyHookHandler;
 
 		#region Events
 
@@ -72,9 +70,9 @@ namespace InputHook {
 		/// <summary>
 		/// Low level mouse hook's ID
 		/// </summary>
-		private IntPtr mouseHookID = IntPtr.Zero;
+		IntPtr mouseHookID = IntPtr.Zero;
 
-		private IntPtr keyBoardHookID = IntPtr.Zero;
+		IntPtr keyBoardHookID = IntPtr.Zero;
 
 		/// <summary>
 		/// Install low level mouse hook
@@ -106,7 +104,7 @@ namespace InputHook {
 		/// Destructor. Unhook current hook
 		/// </summary>
 		~LowLevelnputHook() {
-			Console.WriteLine(System.Environment.StackTrace);
+			Console.WriteLine(Environment.StackTrace);
 			Uninstall();
 		}
 
@@ -116,7 +114,7 @@ namespace InputHook {
 		/// <param name="proc">Internal callback function</param>
 		/// <param name="handle">Handle for resource (keyboard or mouse?)</param>
 		/// <returns>Hook ID</returns>
-		private static IntPtr SetHook(MouseHookHandler proc, int handle) {
+		static IntPtr SetHook(MouseHookHandler proc, int handle) {
 			using (ProcessModule module = Process.GetCurrentProcess().MainModule)
 				//return NativeMethods.SetWindowsHookEx(handle, proc, NativeMethods.GetModuleHandle(module.ModuleName), 0);
 				return NativeMethods.SetWindowsHookEx(handle, proc, IntPtr.Zero, 0);
@@ -125,9 +123,9 @@ namespace InputHook {
 		/// <summary>
 		/// Callback function
 		/// </summary>
-		private IntPtr HookFunc(int nCode, IntPtr wParam, IntPtr lParam) {
+		IntPtr HookFunc(int nCode, IntPtr wParam, IntPtr lParam) {
 			// parse system messages
-			if (nCode >= 0 && enabled) {
+			if (nCode >= 0 && Enabled) {
 				if (MouseMessages.WM_LBUTTONDOWN == (MouseMessages) wParam)
 					LeftButtonDown?.Invoke((MSLLHOOKSTRUCT) Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT)));
 				if (MouseMessages.WM_LBUTTONUP == (MouseMessages) wParam)
@@ -150,7 +148,7 @@ namespace InputHook {
 			return NativeMethods.CallNextHookEx(mouseHookID, nCode, wParam, lParam);
 		}
 
-		private IntPtr KeyBoardHookFunc(int nCode, IntPtr wParam, IntPtr lParam) {
+		IntPtr KeyBoardHookFunc(int nCode, IntPtr wParam, IntPtr lParam) {
 			// parse system messages
 			if (nCode >= 0) {
 				if (KeyBoardMessages.WM_KEYDOWN == (KeyBoardMessages) wParam)
@@ -177,11 +175,11 @@ namespace InputHook {
 		//}
 
 		#region WinAPI
+		const int WH_MOUSE_LL = 14;
 
-		private const int WH_MOUSE_LL = 14;
-		private const int WH_KEYBOARD_LL = 13;
+		const int WH_KEYBOARD_LL = 13;
 
-		private enum MouseMessages {
+		enum MouseMessages {
 			WM_LBUTTONDOWN = 0x0201,
 			WM_LBUTTONUP = 0x0202,
 			WM_MOUSEMOVE = 0x0200,
@@ -193,7 +191,7 @@ namespace InputHook {
 			WM_MBUTTONUP = 0x0208
 		}
 
-		private enum KeyBoardMessages {
+		enum KeyBoardMessages {
 			WM_KEYDOWN = 0x0100,
 			WM_KEYUP = 0x0101,
 			WM_SYSKEYDOWN = 0x0104
@@ -229,17 +227,17 @@ namespace InputHook {
 		/// </summary>
 		/// <param name="obj"></param>
 		/// <returns></returns>
-		public override bool Equals(System.Object obj) {
+		public override bool Equals(object obj) {
 			// If parameter is null return false.
 			if (obj == null) {
 				return false;
 			}
 #pragma warning disable 168
-			LowLevelPoint p = new LowLevelPoint();
+			var p = new LowLevelPoint();
 			try {
 				p = (LowLevelPoint) obj;
 			}
-			catch (InvalidCastException e) {
+			catch (InvalidCastException) {
 				return false;
 			}
 #pragma warning restore 168
@@ -327,13 +325,13 @@ namespace InputHook {
 		/// </summary>
 		/// <param name="obj"></param>
 		/// <returns></returns>
-		public override bool Equals(System.Object obj) {
+		public override bool Equals(object obj) {
 			// If parameter is null return false.
 			if (obj == null) {
 				return false;
 			}
 #pragma warning disable 168 
-			MSLLHOOKSTRUCT p = new MSLLHOOKSTRUCT();
+			var p = new MSLLHOOKSTRUCT();
 			try {
 				p = (MSLLHOOKSTRUCT) obj;
 			}
@@ -395,7 +393,7 @@ namespace InputHook {
 		}
 	}
 
-	internal static class NativeMethods {
+	static class NativeMethods {
 		[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
 		internal static extern IntPtr SetWindowsHookEx(int idHook,
 			LowLevelnputHook.MouseHookHandler lpfn, IntPtr hMod, uint dwThreadId);

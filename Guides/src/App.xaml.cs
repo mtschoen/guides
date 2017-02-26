@@ -1,10 +1,10 @@
-﻿using InputHook;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Media;
+using InputHook;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
 
@@ -155,8 +155,8 @@ namespace Guides
 			if (Ctrl && Alt && key == Keys.Q) {				//CTRL+ALT+Q Quits
 				OnExit();
 			}
-			foreach (var form in windows)
-				form.OnKeyDown(key);
+			foreach (var window in windows)
+				window.OnKeyDown(key);
 		}
 		void OnKeyUp(Keys key) {
 			if (key == Keys.LShiftKey || key == Keys.RShiftKey) {

@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-namespace Guides {
+namespace Guides
+{
 	/// <summary>
 	/// An extension of the Guide class that draws a line
 	/// </summary>
@@ -52,26 +52,6 @@ namespace Guides {
 			horiz = true;
 			this.location = location;
 		}
-
-		/// <summary>
-		/// Draws the guide
-		/// </summary>
-		/// <param name="g">Graphics context from form</param>
-		//public override void Draw(Graphics g) {
-		//	base.Draw(g);
-		//	if(showRotated) {
-		//		SolidBrush br = new SolidBrush(Color.Red);
-		//		g.FillEllipse(br, owner.resolutionScale * rotateCenter.X - 5, owner.resolutionScale * rotateCenter.Y - 5, 10, 10);
-		//		g.DrawLine(pen, a, b);
-		//		br.Dispose();
-		//	} else {
-		//		if(horiz)
-		//			g.DrawLine(pen, 0, owner.resolutionScale * location, owner.resolutionScale * owner.ScreenWidth, owner.resolutionScale * location);
-		//		else
-		//			g.DrawLine(pen, owner.resolutionScale * location, 0, owner.resolutionScale * location, owner.resolutionScale * owner.ScreenHeight);
-		//	}
-		//	pen.Dispose();
-		//}
 
 		/// <summary>
 		/// Respond to mouse motion
@@ -170,7 +150,7 @@ namespace Guides {
 		/// </summary>
 		/// <param name="mousePoint">Mouse position</param>
 		public override bool OnRightMouseUp(Point mousePoint) {
-			if (ActiveGuide != null && ActiveGuide != this)
+			if (ActiveGuide != null && !ReferenceEquals(ActiveGuide, this))
 				return false;
 
 			ActiveGuide = null;
@@ -236,18 +216,18 @@ namespace Guides {
 		/// <param name="mouseData"></param>
 		/// <param name="delta"></param>
 		public override void OnMouseWheel(Point mousePoint, uint mouseData, int delta) {
-			if (active) {
-				if (mouseData > 7864320) //This is some internally defined value that I can't find
-					location += delta;
-				else
-					location -= delta;
-			}
+			if (!active) return;
+
+			if (mouseData > 7864320) //This is some internally defined value that I can't find
+				location += delta;
+			else
+				location -= delta;
 		}
 
 		public override string ToString() {
 			var startPoint = geometry.StartPoint;
 			var endPoint = geometry.EndPoint;
-			return $"LineGuide horiz:{horiz} location:{location} rotated:{rotated} ({startPoint.X}, {startPoint.Y}) - ({endPoint.X}, {endPoint.Y})";
+			return $"LineGuide horiz:{horiz} location:{location:f2} rotated:{rotated} ({startPoint.X}, {startPoint.Y}) - ({endPoint.X}, {endPoint.Y}) active:{active} dragging:{dragging}";
 		}
 	}
 }

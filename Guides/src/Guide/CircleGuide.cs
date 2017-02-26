@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Media;
-using Point = System.Windows.Point;
+using System.Windows.Shapes;
 
 namespace Guides {
 	/// <summary>
@@ -12,26 +14,38 @@ namespace Guides {
 		/// <summary>
 		/// The center of the circle
 		/// </summary>
-		public Point center;
+		public Point center {
+			get { return geometry.Center; }
+			set { geometry.Center = value; }
+		}
 		Point centerHold;
+
 		/// <summary>
 		/// The radius of the circle
 		/// </summary>
-		public double radius { get; set; }
-		double reticuleLength = 7;
+		public double radius {
+			get { return geometry.RadiusX; }
+			set {
+				geometry.RadiusX = value;
+				geometry.RadiusY = value;
+			}
+		}
+
+		const double ReticuleLength = 7;
 		double radHold;
 		double centerDist, scaleDist, scaleAngle;
 
 		bool scaling, anchorScaling, wheelScaling;
+		Ellipse rotateCircle;
 		/// <summary>
 		/// Whether to draw reticule lines perpendicular to the horizontal/vertical tangents
 		/// </summary>
 		public bool reticule { get; set; }
-		//Rectangle circRect {
-		//	get {
-		//		return new Rectangle(center.X - radius, center.Y - radius, radius + radius, radius + radius);
-		//	}
-		//}
+
+		readonly Line[] reticuleLines = new Line[4];
+
+		protected override Geometry DefiningGeometry => geometry;
+		readonly EllipseGeometry geometry = new EllipseGeometry();
 
 		public CircleGuide(Overlay owner, Point center) : this(owner, center, 50) { }
 		public CircleGuide(Overlay owner, Point center, int radius)
@@ -41,47 +55,17 @@ namespace Guides {
 		}
 
 		/// <summary>
-		/// Draws the guide to the screen
-		/// </summary>
-		/// <param name="g"></param>
-		//public override void Draw(Graphics g) {
-		//	base.Draw(g);
-		//	if (anchorScaling) {
-		//		SolidBrush br = new SolidBrush(Color.Red);
-		//		g.FillEllipse(br, owner.resolutionScale * dragStart.X - 5, owner.resolutionScale * dragStart.Y - 5, 10, 10);
-		//		br.Dispose();
-		//	}
-		//	Rectangle localCircRect = new Rectangle();
-		//	localCircRect.X = (int)(circRect.X * owner.resolutionScale);
-		//	localCircRect.Y = (int)(circRect.Y * owner.resolutionScale);
-		//	localCircRect.Width = (int)(circRect.Width * owner.resolutionScale);
-		//	localCircRect.Height = (int)(circRect.Height * owner.resolutionScale);
-
-		//	g.DrawEllipse(pen, localCircRect);
-		//	pen.Color = Color.Black;
-		//	pen.Width = 1;
-		//	if (reticule) {
-
-		//		Point localCenter = new Point();
-		//		localCenter.X = (int)(center.X * owner.resolutionScale);
-		//		localCenter.Y = (int)(center.Y * owner.resolutionScale);
-
-		//		g.DrawLine(pen, localCenter.X, localCenter.Y + radius + reticuleLength, localCenter.X, localCenter.Y + radius - reticuleLength);
-		//		g.DrawLine(pen, localCenter.X + radius + reticuleLength, localCenter.Y, localCenter.X + radius - reticuleLength, localCenter.Y);
-		//		g.DrawLine(pen, localCenter.X, localCenter.Y - radius + reticuleLength, localCenter.X, localCenter.Y - radius - reticuleLength);
-		//		g.DrawLine(pen, localCenter.X - radius + reticuleLength, localCenter.Y, localCenter.X - radius - reticuleLength, localCenter.Y);
-		//	}
-		//	pen.Dispose();
-		//}
-		/// <summary>
 		/// 
 		/// </summary>
 		/// <param name="mousePoint">Mouse position</param>
 		/// <returns></returns>
 		public override bool OnMouseMove(Point mousePoint) {
 			if (dragging) {
+				var center = geometry.Center;
 				center.X = centerHold.X + (mousePoint.X - dragStart.X);
 				center.Y = centerHold.Y + (mousePoint.Y - dragStart.Y);
+				geometry.Center = center;
+				UpdateReticule();
 				return true;
 			}
 			if (scaling) {
@@ -92,29 +76,58 @@ namespace Guides {
 				} else {
 					radius = (int)Utility.Distance(center, mousePoint);
 				}
+				UpdateReticule();
 				return true;
 			}
 			return false;
 		}
 
-		private void AnchorScale(Point mousePoint, double dist) {
+		void UpdateReticule() {
+			if (!reticule) return;
+
+			reticuleLines[0].X1 = center.X;
+			reticuleLines[0].Y1 = center.Y + radius + ReticuleLength;
+			reticuleLines[0].X2 = center.X;
+			reticuleLines[0].Y2 = center.Y + radius - ReticuleLength;
+
+			reticuleLines[1].X1 = center.X + radius + ReticuleLength;
+			reticuleLines[1].Y1 = center.Y;
+			reticuleLines[1].X2 = center.X + radius - ReticuleLength;
+			reticuleLines[1].Y2 = center.Y;
+
+			reticuleLines[2].X1 = center.X;
+			reticuleLines[2].Y1 = center.Y - radius + ReticuleLength;
+			reticuleLines[2].X2 = center.X;
+			reticuleLines[2].Y2 = center.Y - radius - ReticuleLength;
+
+			reticuleLines[3].X1 = center.X - radius + ReticuleLength;
+			reticuleLines[3].Y1 = center.Y;
+			reticuleLines[3].X2 = center.X - radius - ReticuleLength;
+			reticuleLines[3].Y2 = center.Y;
+		}
+
+		void AnchorScale(Point mousePoint, double dist) {
 			radius = radHold + (int)Math.Round(dist);
-			double dx = dragStart.X - mousePoint.X;
-			double dy = dragStart.Y - mousePoint.Y;
-			if (dx != 0) {
-				double tmpDist = centerDist + dist;
-				if (!App.Alt)
-					scaleAngle = Math.Atan(dy / dx);
-				if (dx < 0) {
-					dx = Math.Cos(scaleAngle) * (centerDist + dist);
-					dy = Math.Sin(scaleAngle) * (centerDist + dist);
-				} else {
-					dx = -Math.Cos(scaleAngle) * (centerDist + dist);
-					dy = -Math.Sin(scaleAngle) * (centerDist + dist);
-				}
-				center.X = dragStart.X + (int)Math.Round(dx);
-				center.Y = dragStart.Y + (int)Math.Round(dy);
+			var dx = dragStart.X - mousePoint.X;
+			var dy = dragStart.Y - mousePoint.Y;
+			if (!(Math.Abs(dx) > 0.00001)) return;
+
+			if (!App.Alt)
+				scaleAngle = Math.Atan(dy / dx);
+
+			var d = centerDist + dist;
+			if (dx < 0) {
+				dx = Math.Cos(scaleAngle) * d;
+				dy = Math.Sin(scaleAngle) * d;
+			} else {
+				dx = -Math.Cos(scaleAngle) * d;
+				dy = -Math.Sin(scaleAngle) * d;
 			}
+
+			var center = geometry.Center;
+			center.X = dragStart.X + (int)Math.Round(dx);
+			center.Y = dragStart.Y + (int)Math.Round(dy);
+			geometry.Center = center;
 		}
 		/// <summary>
 		/// 
@@ -140,6 +153,18 @@ namespace Guides {
 					centerDist = Utility.Distance(center, mousePoint);
 					radHold = radius;
 					dragStart = mousePoint;
+					const float circleWidth = 10f;
+					const float circleHeight = 10f;
+
+					rotateCircle = new Ellipse {
+						Fill = Colors.ActiveBrush,
+						Width = circleWidth,
+						Height = circleHeight
+					};
+					owner.Canvas.Children.Add(rotateCircle);
+
+					Canvas.SetLeft(rotateCircle, mousePoint.X - circleWidth * 0.5f);
+					Canvas.SetTop(rotateCircle, mousePoint.Y - circleHeight * 0.5f);
 				}
 				wheelScaling = false;
 				scaling = true;
@@ -154,6 +179,8 @@ namespace Guides {
 		public override bool OnRightMouseUp(Point mousePoint) {
 			scaling = false;
 			anchorScaling = false;
+			if (rotateCircle != null)
+				owner.Canvas.Children.Remove(rotateCircle);
 			return false;
 		}
 		/// <summary>
@@ -162,8 +189,8 @@ namespace Guides {
 		/// <param name="pt">The point</param>
 		/// <returns></returns>
 		public override bool Intersects(Point pt) {
-			double dist = Utility.Distance(center, pt);
-			return dist > (Math.Abs(radius) - ClickMargin) && dist < (Math.Abs(radius) + ClickMargin);
+			var dist = Utility.Distance(center, pt);
+			return dist > Math.Abs(radius) - ClickMargin && dist < Math.Abs(radius) + ClickMargin;
 		}
 
 		/// <summary>
@@ -192,12 +219,30 @@ namespace Guides {
 			if (active) {
 				if (App.Ctrl && App.Alt && key == Keys.R) {
 					reticule = !reticule;
+					if (reticule) {
+						for (var i = 0; i < reticuleLines.Length; i++) {
+							var line = new Line {
+								StrokeThickness = 1,
+								Stroke = Brushes.Black
+							};
+							owner.Canvas.Children.Add(line);
+							reticuleLines[i] = line;
+						}
+						UpdateReticule();
+					} else {
+						foreach (var line in reticuleLines) {
+							owner.Canvas.Children.Remove(line);
+						}
+					}
 					return true;
 				}
 			}
 			return false;
 		}
 
-		protected override Geometry DefiningGeometry { get; }
+		public override string ToString()
+		{
+			return $"CircleGuide center:({center.X:f2}, {center.Y:f2}), radius:{radius:f2} active:{active} dragging:{dragging}";
+		}
 	}
 }

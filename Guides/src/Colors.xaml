@@ -8,10 +8,10 @@
         Title="Colors" Height="140" Width="200" MinHeight="140" MinWidth="200" Initialized="Window_Initialized">
 	<Grid>
 		<Grid.RowDefinitions>
-			<RowDefinition Height="25"></RowDefinition>
-			<RowDefinition Height="25"></RowDefinition>
-			<RowDefinition Height="25"></RowDefinition>
-			<RowDefinition Height="25"></RowDefinition>
+			<RowDefinition Height="25" />
+			<RowDefinition Height="25" />
+			<RowDefinition Height="25" />
+			<RowDefinition Height="25" />
 		</Grid.RowDefinitions>
 		<Label Grid.Row="0">Active Guide Color</Label>
 		<local:ColorPicker Grid.Row="1" x:Name="ActiveColorPicker"/>
@@ -19,3 +19,18 @@
 		<local:ColorPicker Grid.Row="3" x:Name="InactiveColorPicker"/>
 	</Grid>
 </Window>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

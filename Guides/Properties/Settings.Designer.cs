@@ -8,14 +8,20 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
+using System.CodeDom.Compiler;
+using System.Configuration;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Windows.Media;
+
 namespace Guides.Properties {
     
     
-    [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "14.0.0.0")]
-    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
+    [CompilerGenerated()]
+    [GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "14.0.0.0")]
+    internal sealed partial class Settings : ApplicationSettingsBase {
         
-        private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
+        private static Settings defaultInstance = ((Settings)(Synchronized(new Settings())));
         
         public static Settings Default {
             get {
@@ -23,24 +29,24 @@ namespace Guides.Properties {
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("#FF00FFFF")]
-        public global::System.Windows.Media.SolidColorBrush ActiveBrush {
+        [UserScopedSetting()]
+        [DebuggerNonUserCode()]
+        [DefaultSettingValue("#FF00FFFF")]
+        public SolidColorBrush ActiveBrush {
             get {
-                return ((global::System.Windows.Media.SolidColorBrush)(this["ActiveBrush"]));
+                return ((SolidColorBrush)(this["ActiveBrush"]));
             }
             set {
                 this["ActiveBrush"] = value;
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("#FFFF0000")]
-        public global::System.Windows.Media.SolidColorBrush InactiveBrush {
+        [UserScopedSetting()]
+        [DebuggerNonUserCode()]
+        [DefaultSettingValue("#FFFF0000")]
+        public SolidColorBrush InactiveBrush {
             get {
-                return ((global::System.Windows.Media.SolidColorBrush)(this["InactiveBrush"]));
+                return ((SolidColorBrush)(this["InactiveBrush"]));
             }
             set {
                 this["InactiveBrush"] = value;

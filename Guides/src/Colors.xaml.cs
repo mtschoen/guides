@@ -1,11 +1,8 @@
-﻿using Guides.Properties;
+﻿using System;
 using System.Windows.Media;
+using Guides.Properties;
 
-namespace Guides
-{
-	/// <summary>
-	/// Interaction logic for Window1.xaml
-	/// </summary>
+namespace Guides {
 	public partial class Colors
 	{
 		public static SolidColorBrush ActiveBrush = Brushes.Cyan;
@@ -21,7 +18,7 @@ namespace Guides
 			InitializeComponent();
 		}
 
-		private void Window_Initialized(object sender, System.EventArgs e) {
+		void Window_Initialized(object sender, EventArgs e) {
 			ActiveColorPicker.SetValue(ActiveBrush);
 			InactiveColorPicker.SetValue(InactiveBrush);
 

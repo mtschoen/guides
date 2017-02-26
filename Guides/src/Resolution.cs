@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Guides {
+namespace Guides
+{
 	public class Resolution {
 		[StructLayout(LayoutKind.Explicit, CharSet = CharSet.Ansi)]
 		struct DEVMODE {
@@ -14,77 +12,77 @@ namespace Guides {
 			public const int CCHFORMNAME = 32;
 
 			[MarshalAs(UnmanagedType.ByValTStr, SizeConst = CCHDEVICENAME)]
-			[System.Runtime.InteropServices.FieldOffset(0)]
+			[FieldOffset(0)]
 			public string dmDeviceName;
-			[System.Runtime.InteropServices.FieldOffset(32)]
-			public Int16 dmSpecVersion;
-			[System.Runtime.InteropServices.FieldOffset(34)]
-			public Int16 dmDriverVersion;
-			[System.Runtime.InteropServices.FieldOffset(36)]
-			public Int16 dmSize;
-			[System.Runtime.InteropServices.FieldOffset(38)]
-			public Int16 dmDriverExtra;
-			[System.Runtime.InteropServices.FieldOffset(40)]
+			[FieldOffset(32)]
+			public short dmSpecVersion;
+			[FieldOffset(34)]
+			public short dmDriverVersion;
+			[FieldOffset(36)]
+			public short dmSize;
+			[FieldOffset(38)]
+			public short dmDriverExtra;
+			[FieldOffset(40)]
 			public DM dmFields;
 
-			[System.Runtime.InteropServices.FieldOffset(44)]
-			Int16 dmOrientation;
-			[System.Runtime.InteropServices.FieldOffset(46)]
-			Int16 dmPaperSize;
-			[System.Runtime.InteropServices.FieldOffset(48)]
-			Int16 dmPaperLength;
-			[System.Runtime.InteropServices.FieldOffset(50)]
-			Int16 dmPaperWidth;
-			[System.Runtime.InteropServices.FieldOffset(52)]
-			Int16 dmScale;
-			[System.Runtime.InteropServices.FieldOffset(54)]
-			Int16 dmCopies;
-			[System.Runtime.InteropServices.FieldOffset(56)]
-			Int16 dmDefaultSource;
-			[System.Runtime.InteropServices.FieldOffset(58)]
-			Int16 dmPrintQuality;
+			[FieldOffset(44)]
+			short dmOrientation;
+			[FieldOffset(46)]
+			short dmPaperSize;
+			[FieldOffset(48)]
+			short dmPaperLength;
+			[FieldOffset(50)]
+			short dmPaperWidth;
+			[FieldOffset(52)]
+			short dmScale;
+			[FieldOffset(54)]
+			short dmCopies;
+			[FieldOffset(56)]
+			short dmDefaultSource;
+			[FieldOffset(58)]
+			short dmPrintQuality;
 
-			[System.Runtime.InteropServices.FieldOffset(44)]
+			[FieldOffset(44)]
 			public POINTL dmPosition;
-			[System.Runtime.InteropServices.FieldOffset(52)]
-			public Int32 dmDisplayOrientation;
-			[System.Runtime.InteropServices.FieldOffset(56)]
-			public Int32 dmDisplayFixedOutput;
+			[FieldOffset(52)]
+			public int dmDisplayOrientation;
+			[FieldOffset(56)]
+			public int dmDisplayFixedOutput;
 
-			[System.Runtime.InteropServices.FieldOffset(60)]
+			[FieldOffset(60)]
 			public short dmColor; // See note below!
-			[System.Runtime.InteropServices.FieldOffset(62)]
+			[FieldOffset(62)]
 			public short dmDuplex; // See note below!
-			[System.Runtime.InteropServices.FieldOffset(64)]
+			[FieldOffset(64)]
 			public short dmYResolution;
-			[System.Runtime.InteropServices.FieldOffset(66)]
+			[FieldOffset(66)]
 			public short dmTTOption;
-			[System.Runtime.InteropServices.FieldOffset(68)]
+			[FieldOffset(68)]
 			public short dmCollate; // See note below!
-			[System.Runtime.InteropServices.FieldOffset(72)]
+			[FieldOffset(72)]
 			[MarshalAs(UnmanagedType.ByValTStr, SizeConst = CCHFORMNAME)]
 			public string dmFormName;
-			[System.Runtime.InteropServices.FieldOffset(102)]
-			public Int16 dmLogPixels;
-			[System.Runtime.InteropServices.FieldOffset(104)]
-			public Int32 dmBitsPerPel;
-			[System.Runtime.InteropServices.FieldOffset(108)]
-			public Int32 dmPelsWidth;
-			[System.Runtime.InteropServices.FieldOffset(112)]
-			public Int32 dmPelsHeight;
-			[System.Runtime.InteropServices.FieldOffset(116)]
-			public Int32 dmDisplayFlags;
-			[System.Runtime.InteropServices.FieldOffset(116)]
-			public Int32 dmNup;
-			[System.Runtime.InteropServices.FieldOffset(120)]
-			public Int32 dmDisplayFrequency;
-		};
-		struct POINTL {
-			public Int32 x;
-			public Int32 y;
+			[FieldOffset(102)]
+			public short dmLogPixels;
+			[FieldOffset(104)]
+			public int dmBitsPerPel;
+			[FieldOffset(108)]
+			public int dmPelsWidth;
+			[FieldOffset(112)]
+			public int dmPelsHeight;
+			[FieldOffset(116)]
+			public int dmDisplayFlags;
+			[FieldOffset(116)]
+			public int dmNup;
+			[FieldOffset(120)]
+			public int dmDisplayFrequency;
 		}
-		[Flags()]
-		enum DM : int {
+		struct POINTL {
+			public int x;
+			public int y;
+		}
+		[Flags]
+		enum DM {
 			Orientation = 0x1,
 			PaperSize = 0x2,
 			PaperLength = 0x4,
@@ -121,8 +119,8 @@ namespace Guides {
 		static extern int EnumDisplaySettings(string deviceName, int modeNum, ref DEVMODE devMode);
 
 		//http://stackoverflow.com/questions/18832991/enumdisplaydevices-not-returning-anything
-		[Flags()]
-		public enum DisplayDeviceStateFlags : int {
+		[Flags]
+		public enum DisplayDeviceStateFlags {
 			/// <summary>The device is part of the desktop.</summary>
 			AttachedToDesktop = 0x1,
 			MultiDriver = 0x2,
@@ -171,8 +169,8 @@ namespace Guides {
 			while (EnumDisplayDevices(null, deviceNum, ref dd, 0)) {
 				//DumpDevice(dd);
 				DEVMODE dm = new DEVMODE();
-				dm.dmDeviceName = new String(new char[32]);
-				dm.dmFormName = new String(new char[32]);
+				dm.dmDeviceName = new string(new char[32]);
+				dm.dmFormName = new string(new char[32]);
 				dm.dmSize = (short)Marshal.SizeOf(dm);
 				if (0 != EnumDisplaySettings(dd.DeviceName, ENUM_CURRENT_SETTINGS, ref dm)) {
 					//We have a monitor, and here's the resolution.

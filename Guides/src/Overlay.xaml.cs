@@ -1,32 +1,28 @@
-﻿#define DEBUG_OVERLAY
-//#define DEBUG_CROSS
+﻿//#define DEBUG_OVERLAY
+#define DEBUG_CROSS
 //#define UPDATE_BLOCK
 
 #if DEBUG_OVERLAY
 using System;
-using System.Windows.Media;
-using System.Windows.Controls;
 #endif
 
 #if DEBUG_CROSS
 using System.Windows.Shapes;
 #endif
 
-using InputHook;
-using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using InputHook;
 using Cursors = System.Windows.Input.Cursors;
 
-namespace Guides
-{
+namespace Guides {
 	//TODO: Add opacity setting
 	//TODO: Change cursor for horizontal/vertical lines
 	//TODO: Save/load guide sets
-	//TODO: Color settings
 
 	/// <summary>
 	/// Interaction logic for Overlay.xaml
@@ -45,12 +41,15 @@ namespace Guides
 		const int UpdateSleep = 15; //Time between invalidates on mouse move.  Lower for smoother animation, higher for better performance
 #endif
 
+#if DEBUG_OVERLAY || DEBUG_CROSS
+		Brush screenColor;
+#endif
+
 #if DEBUG_CROSS
 		LineGuide horiz, vert;
 #endif
 
 #if DEBUG_OVERLAY
-		public Brush screenColor;
 		double debugBoxStartHeight;
 #endif
 
@@ -97,12 +96,9 @@ namespace Guides
 		}
 
 #if DEBUG_OVERLAY
-		private Brush PickRandomBrush(Random rnd){
-			var result = Brushes.Transparent;
-			var brushesType = typeof(Brushes);
-			var properties = brushesType.GetProperties();
-			var random = rnd.Next(properties.Length);
-			result = (SolidColorBrush)properties[random].GetValue(null, null);
+		static Brush PickRandomBrush(Random rnd){
+			var properties = typeof(Brushes).GetProperties();
+			var result = (SolidColorBrush)properties[rnd.Next(properties.Length)].GetValue(null, null);
 			return result;
 		}
 #endif
@@ -267,7 +263,7 @@ namespace Guides
 			var guidesCount = guidesList.Length;
 			GuidesLabel.Content = $"Guides ({guidesCount}):";
 
-			const double lineHeight = 25;
+			const double lineHeight = 18;
 			DebugBox.Height = debugBoxStartHeight + guidesCount * lineHeight;
 			GuidesBox.Text = string.Empty;
 			if (Guide.ActiveGuide != null)
@@ -283,7 +279,8 @@ namespace Guides
 		/// </summary>
 		/// <param name="key">What key is pressed</param>
 		public void OnKeyDown(Keys key) {
-			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+			var children = Canvas.Children.OfType<Guide>().ToList();
+			foreach (var guide in children) {
 				guide.OnKeyDown(key);
 			}
 		}
