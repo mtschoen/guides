@@ -13,7 +13,7 @@ namespace Guides
 	/// <summary>
 	/// Interaction logic for App.xaml
 	/// </summary>
-	public partial class App {
+	public partial class App : IDisposable {
 		/// <summary>
 		/// Whether we are listening to input (listening when false)
 		/// </summary>
@@ -74,7 +74,7 @@ namespace Guides
 
 			inputHook.Install();
 
-			var resolutions = Resolution.GetResolutions();
+			var resolutions = NativeMethods.GetResolutions();
 
 			for (var i = 0; i < Screen.AllScreens.Length; i++) {
 				var window = new Overlay();
@@ -228,6 +228,11 @@ namespace Guides
 		}
 		static void OnExit() {
 			Current.Shutdown();
+		}
+
+		public void Dispose() {
+			trayIcon?.Dispose();
+			trayMenu?.Dispose();
 		}
 	}
 }

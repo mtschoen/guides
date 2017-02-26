@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace Guides
 {
-	public class Resolution {
+	public class NativeMethods {
 		[StructLayout(LayoutKind.Explicit, CharSet = CharSet.Ansi)]
 		struct DEVMODE {
 			public const int CCHDEVICENAME = 32;
@@ -157,9 +157,9 @@ namespace Guides
 
 		public int x, y, offsetX, offsetY;
 
-		public static Dictionary<string, Resolution> GetResolutions() {
+		public static Dictionary<string, NativeMethods> GetResolutions() {
 
-			Dictionary<string, Resolution> resolutions = new Dictionary<string, Resolution>();
+			Dictionary<string, NativeMethods> resolutions = new Dictionary<string, NativeMethods>();
 
 			DISPLAY_DEVICE dd = new DISPLAY_DEVICE();
 
@@ -175,7 +175,7 @@ namespace Guides
 				if (0 != EnumDisplaySettings(dd.DeviceName, ENUM_CURRENT_SETTINGS, ref dm)) {
 					//We have a monitor, and here's the resolution.
 					//Debug.WriteLine(dd.DeviceName + ", " + dm.dmPelsWidth);
-					resolutions[dd.DeviceName] = new Resolution { x = dm.dmPelsWidth, y = dm.dmPelsHeight, offsetX = dm.dmPosition.x, offsetY = dm.dmPosition.y };
+					resolutions[dd.DeviceName] = new NativeMethods { x = dm.dmPelsWidth, y = dm.dmPelsHeight, offsetX = dm.dmPosition.x, offsetY = dm.dmPosition.y };
 				}
 
 				DISPLAY_DEVICE newdd = new DISPLAY_DEVICE();

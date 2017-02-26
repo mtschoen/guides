@@ -64,7 +64,7 @@
     <Compile Include="src\ColorPicker.xaml.cs">
       <DependentUpon>ColorPicker.xaml</DependentUpon>
     </Compile>
-    <Compile Include="src\Resolution.cs" />
+    <Compile Include="src\NativeMethods.cs" />
     <Compile Include="src\Utility.cs" />
     <Compile Include="src\Colors.xaml.cs">
       <DependentUpon>Colors.xaml</DependentUpon>

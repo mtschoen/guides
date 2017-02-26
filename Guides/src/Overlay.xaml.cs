@@ -1,8 +1,8 @@
 ﻿//#define DEBUG_OVERLAY
-#define DEBUG_CROSS
+//#define DEBUG_CROSS
 //#define UPDATE_BLOCK
 
-#if DEBUG_OVERLAY
+#if DEBUG_OVERLAY || DEBUG_CROSS
 using System;
 #endif
 
@@ -71,16 +71,18 @@ namespace Guides {
 			updateWatch.Start();
 #endif
 
-#if DEBUG_OVERLAY
+#if DEBUG_OVERLAY || DEBUG_CROSS
 			screenColor = PickRandomBrush(new Random());
+#endif
+
+#if DEBUG_OVERLAY
 			debugBoxStartHeight = DebugBox.Height;
 #else
 			DebugBox.Visibility = Visibility.Hidden;
 #endif
 
 #if DEBUG_CROSS
-			Canvas.Children.Add(new Rectangle()
-			{
+			Canvas.Children.Add(new Rectangle {
 				StrokeThickness = 5,
 				Stroke = screenColor,
 				Height = Height,
@@ -95,7 +97,7 @@ namespace Guides {
 #endif
 		}
 
-#if DEBUG_OVERLAY
+#if DEBUG_OVERLAY || DEBUG_CROSS
 		static Brush PickRandomBrush(Random rnd){
 			var properties = typeof(Brushes).GetProperties();
 			var result = (SolidColorBrush)properties[rnd.Next(properties.Length)].GetValue(null, null);
@@ -106,6 +108,7 @@ namespace Guides {
 		//Stores mouse point from mouse move, since we can't trust the values we get in onmousedown
 		bool onScreen;
 		Point mousePoint;
+
 		/// <summary>
 		/// Mouse Move event
 		/// </summary>
@@ -129,12 +132,11 @@ namespace Guides {
 			updateWatch.Restart();
 #endif
 
-			foreach (var guide in Canvas.Children.OfType<Guide>()) {
-				if (guide.OnMouseMove(mousePoint)) {
+			foreach (var guide in Canvas.Children.OfType<Guide>()) 
+				if (guide.OnMouseMove(mousePoint)) 
 					break;
-				}
-			}
 		}
+
 		/// <summary>
 		/// Mouse Down event for Left mouse button
 		/// </summary>
@@ -144,12 +146,11 @@ namespace Guides {
 
 			if (!onScreen) return;
 
-			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+			foreach (var guide in Canvas.Children.OfType<Guide>())
 				if (guide.OnLeftMouseDown(mousePoint)) {
 					ResetAllGuidesActive(guide);
 					break;
 				}
-			}
 		}
 
 		/// <summary>
@@ -161,9 +162,8 @@ namespace Guides {
 
 			if (!onScreen) return;
 
-			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+			foreach (var guide in Canvas.Children.OfType<Guide>())
 				guide.OnLeftMouseUp(mousePoint);
-			}
 		}
 
 		/// <summary>
@@ -175,12 +175,11 @@ namespace Guides {
 
 			if (!onScreen) return;
 
-			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+			foreach (var guide in Canvas.Children.OfType<Guide>())
 				if (guide.OnLeftMouseDown(mousePoint)) {
 					Canvas.Children.Remove(guide);
 					return;
 				}
-			}
 
 			ResetAllGuidesActive();
 
@@ -192,6 +191,7 @@ namespace Guides {
 				Canvas.Children.Add(guide);
 			}
 		}
+
 		/// <summary>
 		/// Mouse Down event for Rigth mosue button
 		/// </summary>
@@ -201,13 +201,13 @@ namespace Guides {
 
 			if (!onScreen) return;
 
-			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+			foreach (var guide in Canvas.Children.OfType<Guide>())
 				if (guide.OnRightMouseDown(mousePoint)) {
 					ResetAllGuidesActive(guide);
 					break;
 				}
-			}
 		}
+
 		/// <summary>
 		/// Mouse Up event for Right mouse button
 		/// </summary>
@@ -218,11 +218,11 @@ namespace Guides {
 			if (!onScreen) return;
 
 			var children = Canvas.Children.OfType<Guide>().ToList();
-			foreach (var guide in children) {
+			foreach (var guide in children)
 				if (guide.OnRightMouseUp(mousePoint))
 					break;
-			}
 		}
+
 		/// <summary>
 		/// Mouse Wheel response
 		/// </summary>
@@ -238,16 +238,15 @@ namespace Guides {
 				delta = 10;
 			if (App.Alt)
 				delta = 1;
-			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+			foreach (var guide in Canvas.Children.OfType<Guide>())
 				guide.OnMouseWheel(mousePoint, mouseStruct.mouseData, delta);
-			}
 		}
 
 		void OnMouse(MSLLHOOKSTRUCT mouseStruct) {
 #if DEBUG_OVERLAY
 #if DEBUG_CROSS
-			horiz.location = rawMousePoint.Y;
-			vert.location = rawMousePoint.X;
+			horiz.location = mousePoint.Y;
+			vert.location = mousePoint.X;
 #endif
 			ScreenIndexLabel.Content = $"Screen {screenIndex}";
 			ScreenIndexLabel.Foreground = screenColor;
@@ -280,16 +279,17 @@ namespace Guides {
 		/// <param name="key">What key is pressed</param>
 		public void OnKeyDown(Keys key) {
 			var children = Canvas.Children.OfType<Guide>().ToList();
-			foreach (var guide in children) {
+			foreach (var guide in children)
 				guide.OnKeyDown(key);
-			}
 		}
+
 		/// <summary>
 		/// Clear the guides array
 		/// </summary>
 		public void ClearGuides() {
 			Canvas.Children.Clear();
 		}
+
 		/// <summary>
 		/// Toggling pause state
 		/// </summary>
@@ -297,32 +297,34 @@ namespace Guides {
 			Cursor = paused ? Cursors.Arrow : Cursors.Hand;
 			Icon = paused ? pausedIcon : normalIcon;
 		}
+
 		/// <summary>
 		/// Called when Show Guides is toggled.  This just calls Invalidate to update drawing
 		/// </summary>
-		public void ShowToggle()
-		{
-			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+		public void ShowToggle() {
+			foreach (var guide in Canvas.Children.OfType<Guide>())
 				guide.Visibility = guide.Visibility == Visibility.Visible ? Visibility.Hidden : Visibility.Visible;
-			}
 		}
+
 		/// <summary>
-		/// Clear the 
+		/// Clear the active state on all guides
 		/// </summary>
-		public void ResetAllGuidesActive() { ResetAllGuidesActive(null); }
+		public void ResetAllGuidesActive() {
+			ResetAllGuidesActive(null);
+		}
+
 		/// <summary>
 		/// Clears the lastActive state on all guides except the optional parameter.  If no parameter is set, all guides are cleared
 		/// </summary>
 		/// <param name="except">The guide to ignore</param>
 		public void ResetAllGuidesActive(Guide except) {
-			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+			foreach (var guide in Canvas.Children.OfType<Guide>())
 				if (!Equals(guide, except))
 					guide.active = false;
-			}
 		}
 
-		/// <summary>6
-		/// Returns true if rawMousePoint is within this window's screen.  Also converts global screen coordinates to 
+		/// <summary>
+		/// Returns true if rawMousePoint is within this window's screen.  Also converts global screen coordinates to
 		/// window coordinates.  The out parameter point will contain the converted coordinates
 		/// </summary>
 		/// <param name="rawMousePoint">Input point for check and conversion</param>
