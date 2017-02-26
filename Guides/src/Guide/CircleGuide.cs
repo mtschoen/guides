@@ -151,9 +151,10 @@ namespace Guides {
 		/// 
 		/// </summary>
 		/// <param name="mousePoint">Mouse position</param>
-		public override void OnRightMouseUp(Point mousePoint) {
+		public override bool OnRightMouseUp(Point mousePoint) {
 			scaling = false;
 			anchorScaling = false;
+			return false;
 		}
 		/// <summary>
 		/// Check if a point is on the circle itself.  Does this by checking if distance from point to radius is within clickMargin of the circle's radius

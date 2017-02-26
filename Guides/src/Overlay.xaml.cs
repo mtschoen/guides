@@ -1,14 +1,24 @@
-﻿//#define DEBUG_OVERLAY
+﻿#define DEBUG_OVERLAY
 //#define DEBUG_CROSS
 //#define UPDATE_BLOCK
 
-using InputHook;
+#if DEBUG_OVERLAY
 using System;
+using System.Windows.Media;
+using System.Windows.Controls;
+#endif
+
+#if DEBUG_CROSS
+using System.Windows.Shapes;
+#endif
+
+using InputHook;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Forms;
-using System.Windows.Media;
+using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 using Cursors = System.Windows.Input.Cursors;
 
 namespace Guides
@@ -41,7 +51,10 @@ namespace Guides
 
 #if DEBUG_OVERLAY
 		public Brush screenColor;
+		double debugBoxStartHeight;
 #endif
+
+		ImageSource pausedIcon, normalIcon;
 
 		public Overlay() {
 			InitializeComponent();
@@ -51,6 +64,9 @@ namespace Guides
 			Topmost = true;
 			Cursor = Cursors.Hand;
 
+			pausedIcon = Imaging.CreateBitmapSourceFromHIcon(Properties.Resources.MainIconPause.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+			normalIcon = Imaging.CreateBitmapSourceFromHIcon(Properties.Resources.MainIcon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+
 #if UPDATE_BLOCK
 			updateWatch = new Stopwatch();
 			updateWatch.Start();
@@ -58,6 +74,7 @@ namespace Guides
 
 #if DEBUG_OVERLAY
 			screenColor = PickRandomBrush(new Random());
+			debugBoxStartHeight = DebugBox.Height;
 #else
 			DebugBox.Visibility = Visibility.Hidden;
 #endif
@@ -80,8 +97,7 @@ namespace Guides
 		}
 
 #if DEBUG_OVERLAY
-		private Brush PickRandomBrush(Random rnd)
-		{
+		private Brush PickRandomBrush(Random rnd){
 			var result = Brushes.Transparent;
 			var brushesType = typeof(Brushes);
 			var properties = brushesType.GetProperties();
@@ -99,7 +115,7 @@ namespace Guides
 		/// </summary>
 		/// <param name="mouseStruct">The mouse parameters</param>
 		public void OnMouseMove(MSLLHOOKSTRUCT mouseStruct) {
-			onScreen = PointInScreen(mouseStruct.pt, out mousePoint);
+			onScreen = PointInScreen(mouseStruct.pt);
 
 #if UPDATE_BLOCK
 			if (updateWatch.ElapsedMilliseconds <= UpdateSleep)
@@ -205,9 +221,10 @@ namespace Guides
 
 			if (!onScreen) return;
 
-			foreach (var child in Canvas.Children) {
-				var guide = child as Guide;
-				guide?.OnRightMouseUp(mousePoint);
+			var children = Canvas.Children.OfType<Guide>().ToList();
+			foreach (var guide in children) {
+				if (guide.OnRightMouseUp(mousePoint))
+					break;
 			}
 		}
 		/// <summary>
@@ -225,17 +242,16 @@ namespace Guides
 				delta = 10;
 			if (App.Alt)
 				delta = 1;
-			foreach (var child in Canvas.Children) {
-				var guide = child as Guide;
-				guide?.OnMouseWheel(mousePoint, mouseStruct.mouseData, delta);
+			foreach (var guide in Canvas.Children.OfType<Guide>()) {
+				guide.OnMouseWheel(mousePoint, mouseStruct.mouseData, delta);
 			}
 		}
 
 		void OnMouse(MSLLHOOKSTRUCT mouseStruct) {
 #if DEBUG_OVERLAY
 #if DEBUG_CROSS
-			horiz.location = mousePoint.Y;
-			vert.location = mousePoint.X;
+			horiz.location = rawMousePoint.Y;
+			vert.location = rawMousePoint.X;
 #endif
 			ScreenIndexLabel.Content = $"Screen {screenIndex}";
 			ScreenIndexLabel.Foreground = screenColor;
@@ -247,6 +263,18 @@ namespace Guides
 			ScreenMouseLabel.Content = $"Screen mouse {mousePoint.X:f1} x {mousePoint.Y:f1}";
 			OnScreenLabel.Content = onScreen ? "On Screen" : "Off Screen";
 			OnScreenLabel.Foreground = onScreen ? Brushes.ForestGreen : Brushes.Red;
+			var guidesList = Canvas.Children.OfType<Guide>().ToArray();
+			var guidesCount = guidesList.Length;
+			GuidesLabel.Content = $"Guides ({guidesCount}):";
+
+			const double lineHeight = 25;
+			DebugBox.Height = debugBoxStartHeight + guidesCount * lineHeight;
+			GuidesBox.Text = string.Empty;
+			if (Guide.ActiveGuide != null)
+				GuidesBox.Text += $"Active Guide {Guide.ActiveGuide}\n";
+			foreach (var guide in guidesList) {
+				GuidesBox.Text += $"{guide}\n";
+			}
 #endif
 		}
 
@@ -264,18 +292,14 @@ namespace Guides
 		/// </summary>
 		public void ClearGuides() {
 			Canvas.Children.Clear();
-			//Invalidate();
 		}
 		/// <summary>
 		/// Toggling pause state
 		/// </summary>
-		//public void PauseToggle() {
-		//	if (App.paused) {
-		//		Icon = Properties.Resources.MainIconPause;
-		//	} else {
-		//		Icon = Properties.Resources.MainIcon;
-		//	}
-		//}
+		public void PauseToggle(bool paused) {
+			Cursor = paused ? Cursors.Arrow : Cursors.Hand;
+			Icon = paused ? pausedIcon : normalIcon;
+		}
 		/// <summary>
 		/// Called when Show Guides is toggled.  This just calls Invalidate to update drawing
 		/// </summary>
@@ -301,17 +325,16 @@ namespace Guides
 		}
 
 		/// <summary>6
-		/// Returns true if mousePoint is within this form's screen.  Also converts global screen coordinates to 
+		/// Returns true if rawMousePoint is within this window's screen.  Also converts global screen coordinates to 
 		/// window coordinates.  The out parameter point will contain the converted coordinates
 		/// </summary>
-		/// <param name="mousePoint">Input point for check and conversion</param>
-		/// <param name="point">Converted point in window coordinates</param>
+		/// <param name="rawMousePoint">Input point for check and conversion</param>
 		/// <returns></returns>
-		public bool PointInScreen(LowLevelPoint mousePoint, out Point point) {
-			point = new Point(mousePoint.x / ResolutionScaleX - Left, mousePoint.y / ResolutionScaleY - Top);
+		public bool PointInScreen(LowLevelPoint rawMousePoint) {
+			mousePoint = new Point(rawMousePoint.x / ResolutionScaleX - Left, rawMousePoint.y / ResolutionScaleY - Top);
 
-			return mousePoint.x >= Left && mousePoint.x < Left + Width
-				&& mousePoint.y >= Top && mousePoint.y < Top + Height;
+			return mousePoint.X >= 0 && mousePoint.X <= Width
+				&& mousePoint.Y >= 0 && mousePoint.Y <= Height;
 		}
 	}
 }

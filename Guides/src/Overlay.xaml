@@ -13,10 +13,16 @@
 			Header="Debug"
 			Background="#7F000000" BorderBrush="Black"
 			Margin="50,250,0,0"
-			Width="222" Height="222"
+			Width="500" Height="245"
 			HorizontalAlignment="Left" VerticalAlignment="Top" Foreground="Red">
 			<Grid>
 				<Grid.RowDefinitions>
+					<RowDefinition Height="222" />
+					<RowDefinition Height="1*" />
+				</Grid.RowDefinitions>
+				<Grid Grid.Row="0">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="1*" />
 					<RowDefinition Height="1*" />
 					<RowDefinition Height="1*" />
 					<RowDefinition Height="1*" />
@@ -34,6 +40,9 @@
 				<Label Grid.Row="5" x:Name="RawMouseLabel" Foreground="#FF73E9A5">Raw mouse 3000, 3000</Label>
 				<Label Grid.Row="6" x:Name="ScreenMouseLabel" Foreground="#FF73C9E9">Mouse on screen 3000, 3000</Label>
 				<Label Grid.Row="7" x:Name="OnScreenLabel" Foreground="#FF15D142">On Screen</Label>
+				<Label Grid.Row="8" x:Name="GuidesLabel" Foreground="#FF15D142">Guides (0):</Label>
+			</Grid>
+				<TextBox x:Name="GuidesBox" Grid.Row="1"></TextBox>
 			</Grid>
 		</GroupBox>
 	</Grid>

@@ -9,6 +9,8 @@ namespace Guides {
 	/// A class to represent individual on-screen guides.  These objects draw themselves and interpret input thorugh a series of callbacks
 	/// </summary>
 	public abstract class Guide : Shape {
+		public static Guide ActiveGuide;
+
 		/// <summary>
 		/// How far from an intersection is considered a "hit"
 		/// </summary>
@@ -88,7 +90,7 @@ namespace Guides {
 		/// The Up event for the rotate button
 		/// </summary>
 		/// <param name="mousePoint">Mouse parameters</param>
-		public abstract void OnRightMouseUp(Point mousePoint);
+		public abstract bool OnRightMouseUp(Point mousePoint);
 
 		/// <summary>
 		/// Retruns true if the point is within clickMargin of the guide

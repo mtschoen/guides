@@ -8,6 +8,9 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
+using System.Drawing;
+using System.Windows.Media;
+
 namespace Guides.Properties {
     using System;
     
@@ -63,20 +66,20 @@ namespace Guides.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
-        public static System.Drawing.Icon MainIcon {
+        public static Icon MainIcon {
             get {
                 object obj = ResourceManager.GetObject("MainIcon", resourceCulture);
-                return ((System.Drawing.Icon)(obj));
+                return ((Icon)(obj));
             }
         }
         
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
-        public static System.Drawing.Icon MainIconPause {
+        public static Icon MainIconPause {
             get {
                 object obj = ResourceManager.GetObject("MainIconPause", resourceCulture);
-                return ((System.Drawing.Icon)(obj));
+                return ((Icon)(obj));
             }
         }
         
@@ -86,7 +89,7 @@ namespace Guides.Properties {
         public static System.Drawing.Icon TrayIcon {
             get {
                 object obj = ResourceManager.GetObject("TrayIcon", resourceCulture);
-                return ((System.Drawing.Icon)(obj));
+                return ((Icon)(obj));
             }
         }
         
@@ -96,7 +99,7 @@ namespace Guides.Properties {
         public static System.Drawing.Icon TrayIconPause {
             get {
                 object obj = ResourceManager.GetObject("TrayIconPause", resourceCulture);
-                return ((System.Drawing.Icon)(obj));
+                return ((Icon)(obj));
             }
         }
     }

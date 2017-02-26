@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace Guides {
 	/// <summary>
@@ -14,6 +16,7 @@ namespace Guides {
 		public bool horiz {
 			get { return geometry.EndPoint.X > 0; }
 			set {
+				rotated = false;
 				var oldlocation = location;
 				geometry.StartPoint = new Point(0, 0);
 				geometry.EndPoint = value ? new Point(owner.Width, 0) : new Point(0, owner.Height);
@@ -28,7 +31,7 @@ namespace Guides {
 			}
 			set {
 				if (horiz) {
-					Canvas.SetTop(this, value + StrokeThickness * 0.5f);
+					Canvas.SetTop(this, value - StrokeThickness * 0.5f);
 					Canvas.SetLeft(this, 0);
 				} else {
 					Canvas.SetLeft(this, value - StrokeThickness * 0.5f);
@@ -39,11 +42,11 @@ namespace Guides {
 
 		double slope, intercept, interceptHold;
 		Point rotateCenter;
-		bool rotating;
-		bool rotated, showRotated; //Showrotated is separated out so that the OnRotateDown doesn't cancel rotation prematurely
+		bool rotating, rotated, rotationChanged;
 
 		protected override Geometry DefiningGeometry => geometry;
 		readonly LineGeometry geometry = new LineGeometry();
+		Ellipse rotateCircle;
 
 		public LineGuide(Overlay owner, double location) : base(owner) {
 			horiz = true;
@@ -76,34 +79,68 @@ namespace Guides {
 		/// <param name="mousePoint">Mouse position</param>
 		/// <returns>True if this guide did anything</returns>
 		public override bool OnMouseMove(Point mousePoint) {
+			var result = false;
 			if(dragging) {
 				if(rotated) {
 					intercept = interceptHold + mousePoint.Y - dragStart.Y - (mousePoint.X - dragStart.X) * slope;
 					CalcPosition();
 				} else {
-					if(horiz) {
-						location = mousePoint.Y;
-					} else {
-						location = mousePoint.X;
-					}
+					location = horiz ? mousePoint.Y : mousePoint.X;
 				}
-				return true;
+				result = true;
 			}
 			if(rotating) {
+				ActiveGuide = this;
+				const float circleWidth = 10f;
+				const float circleHeight = 10f;
+
+				if (!rotationChanged || dragging) {
+					rotateCenter = mousePoint;
+					var rotationWasChanged = rotationChanged;
+					if (!rotationChanged) {
+						rotateCircle = new Ellipse {
+							Fill = Colors.ActiveBrush,
+							Width = circleWidth,
+							Height = circleHeight
+						};
+						owner.Canvas.Children.Add(rotateCircle);
+						rotationChanged = true;
+					}
+
+					Canvas.SetLeft(rotateCircle, mousePoint.X - circleWidth * 0.5f);
+					Canvas.SetTop(rotateCircle, mousePoint.Y - circleHeight * 0.5f);
+
+					if (!rotationWasChanged)
+						return true;
+				}
+
 				Canvas.SetTop(this, 0);
 				Canvas.SetLeft(this, 0);
-				showRotated = rotated = true;
-				slope = (double)(rotateCenter.Y - mousePoint.Y) / (rotateCenter.X - mousePoint.X);
-				intercept = rotateCenter.Y - (slope * rotateCenter.X);
+				if (!dragging) {
+					var newSlope = (rotateCenter.Y - mousePoint.Y)/(rotateCenter.X - mousePoint.X);
+					if (!double.IsNaN(newSlope)) {
+						slope = newSlope;
+						rotated = true;
+					}
+				}
+				intercept = rotateCenter.Y - slope * rotateCenter.X;
 				CalcPosition();
-				return true;
+				result = true;
 			}
-			return false;
+			return result;
 		}
 
 		void CalcPosition() {
-			geometry.StartPoint = new Point((int)Math.Round(-intercept / slope), 0);
-			geometry.EndPoint = new Point((int)Math.Round((owner.Height - intercept) / slope), owner.Height);
+			if (Math.Abs(slope) > 1000) {
+				horiz = false;
+				location = rotateCenter.X;
+			} else if (Math.Abs(slope) < 0.001) {
+				horiz = true;
+				location = rotateCenter.Y;
+			} else {
+				geometry.StartPoint = new Point((int)Math.Round(-intercept / slope), 0);
+				geometry.EndPoint = new Point((int)Math.Round((owner.Height - intercept) / slope), owner.Height);
+			}
 		}
 		/// <summary>
 		/// The Down event for the select button
@@ -124,8 +161,6 @@ namespace Guides {
 		public override bool OnRightMouseDown(Point mousePoint) {
 			if(base.OnRightMouseDown(mousePoint)) {
 				rotating = true;
-				rotated = false;
-				rotateCenter = mousePoint;
 				return true;
 			}
 			return false;
@@ -134,24 +169,38 @@ namespace Guides {
 		/// The Up event for the rotate button
 		/// </summary>
 		/// <param name="mousePoint">Mouse position</param>
-		public override void OnRightMouseUp(Point mousePoint) {
-			if (rotating) {
-				rotating = false;
-				return;
+		public override bool OnRightMouseUp(Point mousePoint) {
+			if (ActiveGuide != null && ActiveGuide != this)
+				return false;
+
+			ActiveGuide = null;
+
+			rotating = false;
+			if (rotateCircle != null)
+				owner.Canvas.Children.Remove(rotateCircle);
+
+			if (rotationChanged) {
+				rotationChanged = false;
+				return true;
 			}
 
-			showRotated = rotated;
 			if(horiz) {
 				if(Intersects(mousePoint)) {
 					horiz = false;
 					location = mousePoint.X;
+					rotated = false;
+					return true;
 				}
 			} else {
 				if(Intersects(mousePoint)) {
 					horiz = true;
 					location = mousePoint.Y;
+					rotated = false;
+					return true;
 				}
 			}
+
+			return false;
 		}
 		/// <summary>
 		/// Checks if pointer intersects within clickMargin of line
@@ -160,17 +209,19 @@ namespace Guides {
 		/// <returns></returns>
 		public override bool Intersects(Point pt) {
 			if(rotated) {
-				if(Math.Abs(pt.Y - Math.Abs((pt.X * slope) + intercept)) < clickMargin) {
+				//Debug.WriteLine($"rotated {pt.Y} - {pt.X} * {slope} + {intercept})) {Math.Abs(pt.Y - Math.Abs(pt.X * slope + intercept))}");
+				if (Math.Abs(pt.Y - Math.Abs(pt.X * slope + intercept)) < clickMargin) {
 					return true;
 				}
 			} else {
 				if(horiz) {
-					if(Math.Abs(location - pt.Y) < clickMargin) {
+					//Debug.WriteLine(location + ", " + pt.Y + ", " + Math.Abs(location - pt.Y));
+					if (Math.Abs(location - pt.Y) < clickMargin) {
 						return true;
 					}
 				} else {
 					//Debug.WriteLine(location + ", " + pt.X + ", " + Math.Abs(location - pt.X));
-					if(Math.Abs(location - pt.X) < clickMargin) {
+					if (Math.Abs(location - pt.X) < clickMargin) {
 						return true;
 					}
 				}
@@ -191,6 +242,12 @@ namespace Guides {
 				else
 					location -= delta;
 			}
+		}
+
+		public override string ToString() {
+			var startPoint = geometry.StartPoint;
+			var endPoint = geometry.EndPoint;
+			return $"LineGuide horiz:{horiz} location:{location} rotated:{rotated} ({startPoint.X}, {startPoint.Y}) - ({endPoint.X}, {endPoint.Y})";
 		}
 	}
 }

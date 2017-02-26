@@ -34,6 +34,7 @@ namespace Guides
 		const string BlockText = "Block Clicks (CTRL+ALT+B)";
 		const string UnblockText = "Unblock Clicks (CTRL+ALT+B)";
 		const string ClearText = "Clear Guides (CTRL+ALT+C)";
+		const string ColorsText = "Colors Window";
 		const string ExitText = "Exit (CTRL+ALT+Q)";
 		const string AppName = "Guides 2.0";
 
@@ -49,6 +50,7 @@ namespace Guides
 			trayMenu.MenuItems.Add(HideText, MenuCallback);
 			trayMenu.MenuItems.Add(BlockText, MenuCallback);
 			trayMenu.MenuItems.Add(ClearText, MenuCallback);
+			trayMenu.MenuItems.Add(ColorsText, MenuCallback);
 			trayMenu.MenuItems.Add(ExitText, MenuCallback);
 
 			trayIcon = new NotifyIcon {
@@ -167,7 +169,7 @@ namespace Guides
 				Alt = false;
 			}
 		}
-		private void MenuCallback(object sender, EventArgs e) {
+		void MenuCallback(object sender, EventArgs e) {
 			switch (((MenuItem)sender).Text) {
 				case PauseText:
 				case ResumeText:
@@ -184,6 +186,9 @@ namespace Guides
 				case ClearText:
 					ClearGuides();
 					break;
+				case ColorsText:
+					new Colors();
+					break;
 				case ExitText:
 					OnExit();
 					break;
@@ -198,8 +203,8 @@ namespace Guides
 			trayIcon.Icon = Paused ? Guides.Properties.Resources.TrayIconPause : Guides.Properties.Resources.TrayIcon;
 			if (trayMenu.MenuItems.Count > 0)
 				trayMenu.MenuItems[0].Text = Paused ? ResumeText : PauseText;
-			//foreach (var form in windows)
-			//	form.PauseToggle();
+			foreach (var form in windows)
+				form.PauseToggle(Paused);
 		}
 		void ShowToggle() {
 			Hidden = !Hidden;
