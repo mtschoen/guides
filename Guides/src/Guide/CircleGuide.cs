@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using Label = System.Windows.Controls.Label;
 
 namespace Guides {
 	/// <summary>
@@ -37,12 +38,14 @@ namespace Guides {
 
 		bool scaling, anchorScaling, wheelScaling;
 		Ellipse rotateCircle;
-		/// <summary>
-		/// Whether to draw reticule lines perpendicular to the horizontal/vertical tangents
-		/// </summary>
-		public bool reticule { get; set; }
+		bool reticule;
+		Info info;
 
-		readonly Line[] reticuleLines = new Line[4];
+		readonly Line[] reticuleLines = new Line[6];
+
+		class Info {
+			public Label center;
+		}
 
 		protected override Geometry DefiningGeometry => geometry;
 		readonly EllipseGeometry geometry = new EllipseGeometry();
@@ -66,6 +69,7 @@ namespace Guides {
 				center.Y = centerHold.Y + (mousePoint.Y - dragStart.Y);
 				geometry.Center = center;
 				UpdateReticule();
+				UpdateInfo();
 				return true;
 			}
 			if (scaling) {
@@ -77,6 +81,7 @@ namespace Guides {
 					radius = (int)Utility.Distance(center, mousePoint);
 				}
 				UpdateReticule();
+				UpdateInfo();
 				return true;
 			}
 			return false;
@@ -104,6 +109,27 @@ namespace Guides {
 			reticuleLines[3].Y1 = center.Y;
 			reticuleLines[3].X2 = center.X - radius - ReticuleLength;
 			reticuleLines[3].Y2 = center.Y;
+
+			var halfReticuleLength = ReticuleLength * 0.5f;
+			reticuleLines[4].X1 = center.X + halfReticuleLength;
+			reticuleLines[4].Y1 = center.Y;
+			reticuleLines[4].X2 = center.X - halfReticuleLength;
+			reticuleLines[4].Y2 = center.Y;
+
+			reticuleLines[5].X1 = center.X;
+			reticuleLines[5].Y1 = center.Y + halfReticuleLength;
+			reticuleLines[5].X2 = center.X;
+			reticuleLines[5].Y2 = center.Y - halfReticuleLength;
+		}
+
+		void UpdateInfo() {
+			if (info == null) return;
+
+			info.center.Content = 
+				$@"({center.X * owner.ResolutionScaleX:f0}, {center.Y * owner.ResolutionScaleY:f0})
+{radius * owner.ResolutionScaleX}";
+			Canvas.SetTop(info.center, center.Y);
+			Canvas.SetLeft(info.center, center.X);
 		}
 
 		void AnchorScale(Point mousePoint, double dist) {
@@ -216,6 +242,9 @@ namespace Guides {
 		/// </summary>
 		/// <param name="key">What key was pressed</param>
 		public override bool OnKeyDown(Keys key) {
+			if (base.OnKeyDown(key))
+				return true;
+
 			if (active) {
 				if (App.Ctrl && App.Alt && key == Keys.R) {
 					reticule = !reticule;
@@ -238,6 +267,21 @@ namespace Guides {
 				}
 			}
 			return false;
+		}
+
+		public override void OnInfoKey() {
+			if (info == null) {
+				var centerLabel = new Label();
+				owner.Canvas.Children.Add(centerLabel);
+				info = new Info {center = centerLabel};
+
+				UpdateInfo();
+			}
+			else
+			{
+				owner.Canvas.Children.Remove(info.center);
+				info = null;
+			}
 		}
 
 		public override string ToString()

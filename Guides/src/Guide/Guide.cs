@@ -119,7 +119,14 @@ namespace Guides {
 		/// </summary>
 		/// <param name="key">What key is pressed</param>
 		public virtual bool OnKeyDown(Keys key) {
+			if (active && App.Ctrl && App.Alt && key == Keys.I) {
+				OnInfoKey();
+				return true;
+			}
+
 			return false;
 		}
+
+		public virtual void OnInfoKey() {}
 	}
 }

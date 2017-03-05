@@ -37,12 +37,19 @@ namespace Guides
 					Canvas.SetLeft(this, value - StrokeThickness * 0.5f);
 					Canvas.SetTop(this, 0);
 				}
+				UpdateInfo(rotateCenter);
 			}
 		}
 
 		double slope, intercept, interceptHold;
 		Point rotateCenter;
 		bool rotating, rotated, rotationChanged;
+
+		Info info;
+
+		class Info {
+			public Label location;
+		}
 
 		protected override Geometry DefiningGeometry => geometry;
 		readonly LineGeometry geometry = new LineGeometry();
@@ -68,6 +75,11 @@ namespace Guides
 					location = horiz ? mousePoint.Y : mousePoint.X;
 				}
 				result = true;
+
+				if (!rotating) {
+					rotateCenter = mousePoint;
+					UpdateInfo(rotateCenter);
+				}
 			}
 			if(rotating) {
 				ActiveGuide = this;
@@ -97,7 +109,7 @@ namespace Guides
 				Canvas.SetTop(this, 0);
 				Canvas.SetLeft(this, 0);
 				if (!dragging) {
-					var newSlope = (rotateCenter.Y - mousePoint.Y)/(rotateCenter.X - mousePoint.X);
+					var newSlope = (rotateCenter.Y - mousePoint.Y) / (rotateCenter.X - mousePoint.X);
 					if (!double.IsNaN(newSlope)) {
 						slope = newSlope;
 						rotated = true;
@@ -105,8 +117,10 @@ namespace Guides
 				}
 				intercept = rotateCenter.Y - slope * rotateCenter.X;
 				CalcPosition();
+				UpdateInfo(rotateCenter);
 				result = true;
 			}
+
 			return result;
 		}
 
@@ -222,6 +236,43 @@ namespace Guides
 				location += delta;
 			else
 				location -= delta;
+		}
+
+		public override void OnInfoKey() {
+			base.OnInfoKey();
+
+			if (info == null) {
+				var locationLabel = new Label();
+				owner.Canvas.Children.Add(locationLabel);
+				info = new Info {location = locationLabel};
+				UpdateInfo(rotateCenter);
+			} else {
+				owner.Canvas.Children.Remove(info.location);
+				info = null;
+			}
+		}
+
+		void UpdateInfo(Point mousePoint) {
+			if (info == null) return;
+
+			var locationLabel = info.location;
+			if (rotated) {
+				locationLabel.Content = $@"({mousePoint.X * owner.ResolutionScaleX:f0}, {mousePoint.Y * owner.ResolutionScaleY:f0})
+{slope:f5}
+{Math.Atan(slope) * (180.0 / Math.PI):f2}°";
+				Canvas.SetTop(locationLabel, mousePoint.Y);
+				Canvas.SetLeft(locationLabel, mousePoint.X);
+			} else {
+				locationLabel.Content = $"{location * owner.ResolutionScaleX:f0}";
+				if (horiz) {
+					Canvas.SetTop(locationLabel, location);
+					Canvas.SetLeft(locationLabel, 0);
+				}
+				else {
+					Canvas.SetTop(locationLabel, 0);
+					Canvas.SetLeft(locationLabel, location + StrokeThickness);
+				}
+			}
 		}
 
 		public override string ToString() {
